@@ -13,6 +13,9 @@
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
+  // Record the game start time
+  const startTime = Date.now();
+
   // Player setup
   const player = {
     x: canvas.width / 2 - 25,
@@ -24,27 +27,23 @@
 
   let bullets = [];
   let blobs = [];
+  let boxes = [];
   let blobSpawnTimer = 0;
   let bulletFireTimer = 0;
   let score = 0;
   let gameOver = false;
 
-  // Power-up states and levels (starting at 1, capped at 5)
-  let rapidFireActive = false;
-  let rapidFireLevel = 1;
-  let rapidFireEndTime = 0;
+  // Permanent power-up levels (accumulated via boxes)
+  let permanentRapidLevel = 0;
+  let permanentSprayLevel = 0;
 
-  let sprayActive = false;
-  let sprayLevel = 1;
-  let sprayEndTime = 0;
-
-  // Blob speed level increases every 1000 points
+  // Blob speed multiplier based on score.
   function getBlobSpeedMultiplier() {
     let blobLevel = Math.floor(score / 1000) + 1;
     return 1 + (blobLevel - 1) * 0.1;
   }
 
-  // Update player's position with the mouse
+  // Update player's position with the mouse.
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     player.x = e.clientX - rect.left - player.width / 2;
@@ -54,71 +53,68 @@
     }
   });
 
-  // Spawn a cluster of blobs (3-8 per cluster)
+  // Spawn a cluster of blobs (3-8 per cluster).
+  // Each blob now gets a random health between 1 and 3.
   function spawnCluster() {
     const count = Math.floor(Math.random() * (8 - 3 + 1)) + 3;
     const clusterCenterX = Math.random() * (canvas.width - 100) + 50;
-    const spread = 50; // spread distance
-
-    // 30% chance to include one special blob in the cluster.
-    const includeSpecial = Math.random() < 0.3;
-    const specialIndex = includeSpecial ? Math.floor(Math.random() * count) : -1;
-    
+    const spread = 50;
     for (let i = 0; i < count; i++) {
       const offsetX = (Math.random() - 0.5) * spread;
       const offsetY = (Math.random() - 0.5) * spread;
+      const health = Math.floor(Math.random() * 3) + 1;
       let blob = {
         x: clusterCenterX + offsetX,
         y: -20 + offsetY,
         radius: 20,
-        // Base speed is random between 1 and 2; later multiplied by blob speed multiplier.
         speed: 1 + Math.random(),
         color: 'hsl(' + Math.random() * 360 + ', 100%, 50%)',
-        special: false,
-        specialType: null  // will be "rapid" or "spray" if special
+        health: health,
+        maxHealth: health
       };
-      if (i === specialIndex) {
-        blob.special = true;
-        // Randomly choose the special type.
-        if (Math.random() < 0.5) {
-          blob.specialType = "rapid";
-          blob.color = "magenta"; // distinct color for rapid
-        } else {
-          blob.specialType = "spray";
-          blob.color = "orange"; // distinct color for spray
-        }
-      }
       blobs.push(blob);
     }
   }
 
-  // Update game state
+  // Spawn a power-up box of a specific type at a random location.
+  // When isInitial is true, use a hit count between 20 and 50.
+  // Otherwise (for respawns) use a range between 20 and 100.
+  function spawnBoxForType(type, isInitial = false) {
+    const boxWidth = 40, boxHeight = 40;
+    const min = 20, max = isInitial ? 50 : 100;
+    const newBox = {
+      x: Math.random() * (canvas.width - boxWidth),
+      y: Math.random() * (canvas.height / 3),
+      width: boxWidth,
+      height: boxHeight,
+      type: type,
+      health: Math.floor(Math.random() * (max - min + 1)) + min,
+      createdTime: Date.now()
+    };
+    boxes.push(newBox);
+  }
+
+  // Spawn both power-up boxes initially with initial hit counts between 20 and 50.
+  function spawnBoxes() {
+    spawnBoxForType("rapid", true);
+    spawnBoxForType("spray", true);
+  }
+  spawnBoxes();
+
+  // Update game state.
   function update() {
-    // Reset power-up levels if their timers have expired
-    if (rapidFireActive && Date.now() > rapidFireEndTime) {
-      rapidFireActive = false;
-      rapidFireLevel = 1;
-    }
-    if (sprayActive && Date.now() > sprayEndTime) {
-      sprayActive = false;
-      sprayLevel = 1;
-    }
-    
-    // Determine bullet firing interval.
-    // Normal fire: every 10 frames; with rapid fire, interval reduces proportionally (but not less than 2).
-    let bulletInterval = Math.max(10 / rapidFireLevel, 2);
+    // Determine effective rapid fire level: base fire rate multiplied by (1 + permanent upgrades).
+    let effectiveRapid = 1 + permanentRapidLevel;
+    let bulletInterval = Math.max(10 / effectiveRapid, 2);
     bulletFireTimer++;
     if (bulletFireTimer > bulletInterval) {
       const bulletSpeed = 7;
-      // If spray is active, fire multiple bullets in a spread.
-      if (sprayActive) {
-        // Number of bullets = 1 + 2 * sprayLevel (level1 gives 3, level2 gives 5, etc.)
-        const numBullets = 1 + 2 * sprayLevel;
-        // Total spread angle (radians) – here 60° (PI/3)
+      // If the player has any spray upgrade, use spread firing.
+      if (permanentSprayLevel > 0) {
+        let effectiveSpray = 1 + permanentSprayLevel;
+        const numBullets = 1 + 2 * effectiveSpray;
         const spreadAngle = Math.PI / 3;
-        // Angle between bullets
         const angleStep = numBullets > 1 ? spreadAngle / (numBullets - 1) : 0;
-        // Starting angle offset so that bullets are centered.
         const startAngle = -spreadAngle / 2;
         for (let i = 0; i < numBullets; i++) {
           let angle = startAngle + i * angleStep;
@@ -131,7 +127,7 @@
           });
         }
       } else {
-        // Normal (or rapid) single bullet
+        // Otherwise, fire a single bullet.
         bullets.push({
           x: player.x + player.width / 2,
           y: player.y,
@@ -143,14 +139,16 @@
       bulletFireTimer = 0;
     }
 
-    // Spawn blob clusters periodically
+    // Adjust blob spawn rate: slower in the first minute.
     blobSpawnTimer++;
-    if (blobSpawnTimer > 50) {
+    const elapsedTime = Date.now() - startTime;
+    const spawnInterval = elapsedTime < 60000 ? 100 : 50;
+    if (blobSpawnTimer > spawnInterval) {
       spawnCluster();
       blobSpawnTimer = 0;
     }
 
-    // Update bullets: move according to their velocity
+    // Update bullets.
     for (let i = bullets.length - 1; i >= 0; i--) {
       bullets[i].x += bullets[i].vx;
       bullets[i].y += bullets[i].vy;
@@ -159,13 +157,39 @@
       }
     }
 
-    // Get current blob speed multiplier based on score level.
+    // Check collisions between bullets and power-up boxes.
+    // The door area is defined as the bottom 20% of the box.
+    for (let i = boxes.length - 1; i >= 0; i--) {
+      let box = boxes[i];
+      const doorHeight = box.height * 0.2;
+      const doorY = box.y + box.height - doorHeight;
+      for (let j = bullets.length - 1; j >= 0; j--) {
+        if (bullets[j].x >= box.x && bullets[j].x <= box.x + box.width &&
+            bullets[j].y >= doorY && bullets[j].y <= box.y + box.height) {
+          // Subtract one hit from the box.
+          box.health--;
+          bullets.splice(j, 1);
+          // When the box health reaches zero, award the power-up, remove the box, and respawn one.
+          if (box.health <= 0) {
+            if (box.type === "rapid") {
+              permanentRapidLevel++;
+            } else if (box.type === "spray") {
+              permanentSprayLevel++;
+            }
+            boxes.splice(i, 1);
+            spawnBoxForType(box.type); // Subsequent boxes use the 20-100 range.
+          }
+          break;
+        }
+      }
+    }
+
+    // Get blob speed multiplier.
     let speedMult = getBlobSpeedMultiplier();
 
-    // Update blobs: move them downward with speed multiplier.
+    // Update blobs.
     for (let i = blobs.length - 1; i >= 0; i--) {
       blobs[i].y += blobs[i].speed * speedMult;
-      // Game over if any blob reaches the player's line.
       if (blobs[i].y + blobs[i].radius >= player.y) {
         gameOver = true;
         return;
@@ -182,34 +206,25 @@
         const dy = blobs[i].y - bullets[j].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < blobs[i].radius + bullets[j].radius) {
-          // If a special blob is hit, activate and multiply its effect, capped at level 5.
-          if (blobs[i].special) {
-            if (blobs[i].specialType === "rapid") {
-              rapidFireActive = true;
-              rapidFireLevel = Math.min(rapidFireLevel + 1, 5);
-              rapidFireEndTime = Date.now() + 10000;
-            } else if (blobs[i].specialType === "spray") {
-              sprayActive = true;
-              sprayLevel = Math.min(sprayLevel + 1, 5);
-              sprayEndTime = Date.now() + 10000;
-            }
-          } else {
-            // For normal blobs, you can optionally boost other parameters.
-          }
-          score += 10;
-          blobs.splice(i, 1);
+          // Subtract 1 health per hit.
+          blobs[i].health -= 1;
           bullets.splice(j, 1);
+          // If blob's health is depleted, remove it and award score.
+          if (blobs[i].health <= 0) {
+            score += 10;
+            blobs.splice(i, 1);
+          }
           break;
         }
       }
     }
   }
 
-  // Draw everything on canvas.
+  // Draw game objects.
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw player ship.
+    // Draw the player ship.
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x, player.y, player.width, player.height);
 
@@ -223,33 +238,58 @@
 
     // Draw blobs.
     blobs.forEach(blob => {
+      // Draw the blob.
       ctx.fillStyle = blob.color;
       ctx.beginPath();
       ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
       ctx.fill();
-      // For special blobs, draw a pulsating outline.
-      if (blob.special) {
-        let pulsate = Math.abs(Math.sin(Date.now() / 200)) * 5;
-        let outlineColor = blob.specialType === "rapid" ? 'cyan' : 'blue';
-        ctx.strokeStyle = outlineColor;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(blob.x, blob.y, blob.radius + pulsate, 0, Math.PI * 2);
-        ctx.stroke();
-      }
+      // Draw a ring around the blob representing its health meter.
+      let healthFraction = blob.health / blob.maxHealth;
+      ctx.beginPath();
+      ctx.arc(blob.x, blob.y, blob.radius + 5, -Math.PI / 2, -Math.PI / 2 + healthFraction * 2 * Math.PI);
+      ctx.strokeStyle = "lime";
+      ctx.lineWidth = 3;
+      ctx.stroke();
     });
 
-    // Draw score and levels.
+    // Draw power-up boxes with a brick-like appearance.
+    boxes.forEach(box => {
+      // Draw the brick background.
+      ctx.fillStyle = 'firebrick';
+      ctx.fillRect(box.x, box.y, box.width, box.height);
+      // Draw a thick black border to mimic brick mortar.
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
+      // Draw simple mortar lines.
+      ctx.beginPath();
+      ctx.moveTo(box.x, box.y + box.height / 2);
+      ctx.lineTo(box.x + box.width, box.y + box.height / 2);
+      ctx.moveTo(box.x + box.width / 2, box.y);
+      ctx.lineTo(box.x + box.width / 2, box.y + box.height);
+      ctx.stroke();
+      // Define the door area (bottom 20%) and draw it as a darker brick.
+      const doorHeight = box.height * 0.2;
+      const doorY = box.y + box.height - doorHeight;
+      ctx.fillStyle = '#8B0000';
+      ctx.fillRect(box.x, doorY, box.width, doorHeight);
+      // Draw the current hit count on the door.
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(box.health, box.x + box.width / 2, doorY + doorHeight - 4);
+    });
+
+    // Display score and power-up levels.
     ctx.fillStyle = 'white';
     ctx.font = '20px Arial';
     ctx.textAlign = 'left';
     ctx.fillText('Score: ' + score, 10, 30);
-    ctx.fillText('Rapid Fire Level: ' + rapidFireLevel, 10, 60);
-    ctx.fillText('Spray Level: ' + sprayLevel, 10, 90);
+    ctx.fillText('Rapid Fire Level: ' + (1 + permanentRapidLevel), 10, 60);
+    ctx.fillText('Spray Level: ' + (1 + permanentSprayLevel), 10, 90);
     const blobLevel = Math.floor(score / 1000) + 1;
     ctx.fillText('Blob Speed Level: ' + blobLevel, 10, 120);
 
-    // Draw game over message if needed.
     if (gameOver) {
       ctx.fillStyle = 'red';
       ctx.font = '50px Arial';
