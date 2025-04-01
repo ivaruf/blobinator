@@ -52,6 +52,17 @@
     return 1 + (blobLevel - 1) * 0.1;
   }
 
+  canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault(); // Prevent scrolling
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  player.x = touch.clientX - rect.left - player.width / 2;
+  if (player.x < 0) player.x = 0;
+  if (player.x + player.width > canvas.width) {
+    player.x = canvas.width - player.width;
+  }
+});
+
   // Update player's position with the mouse.
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
