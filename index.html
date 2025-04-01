@@ -27,100 +27,145 @@
   let blobSpawnTimer = 0;
   let bulletFireTimer = 0;
   let score = 0;
-  let gameOver = false;  // Flag to track game state
+  let gameOver = false;
 
-  // Multipliers and special fire state for power-ups
-  let bulletSpeedMultiplier = 1;
-  let playerSpeedMultiplier = 1;
-  // Special fire effect: when active, fire interval is halved (faster fire)
-  let specialFireActive = false;
-  let specialFireEndTime = 0;
+  // Power-up states and levels (starting at 1, capped at 5)
+  let rapidFireActive = false;
+  let rapidFireLevel = 1;
+  let rapidFireEndTime = 0;
 
-  // Update player's x-coordinate based on mouse movement
+  let sprayActive = false;
+  let sprayLevel = 1;
+  let sprayEndTime = 0;
+
+  // Blob speed level increases every 1000 points
+  function getBlobSpeedMultiplier() {
+    let blobLevel = Math.floor(score / 1000) + 1;
+    return 1 + (blobLevel - 1) * 0.1;
+  }
+
+  // Update player's position with the mouse
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     player.x = e.clientX - rect.left - player.width / 2;
-    // Ensure the player stays within bounds
     if (player.x < 0) player.x = 0;
     if (player.x + player.width > canvas.width) {
       player.x = canvas.width - player.width;
     }
   });
 
-  // Function to spawn a cluster of blobs (3-8 per cluster)
+  // Spawn a cluster of blobs (3-8 per cluster)
   function spawnCluster() {
     const count = Math.floor(Math.random() * (8 - 3 + 1)) + 3;
-    // Choose a cluster center (with some margins)
     const clusterCenterX = Math.random() * (canvas.width - 100) + 50;
-    const spread = 50; // Spread distance for cluster
+    const spread = 50; // spread distance
 
-    // Randomly decide if this cluster will include a special blob (30% chance)
+    // 30% chance to include one special blob in the cluster.
     const includeSpecial = Math.random() < 0.3;
-    // Randomly select an index for the special blob if applicable
     const specialIndex = includeSpecial ? Math.floor(Math.random() * count) : -1;
-
+    
     for (let i = 0; i < count; i++) {
       const offsetX = (Math.random() - 0.5) * spread;
       const offsetY = (Math.random() - 0.5) * spread;
-      const blob = {
+      let blob = {
         x: clusterCenterX + offsetX,
         y: -20 + offsetY,
         radius: 20,
-        // Slower speed: random value between 1 and 2
+        // Base speed is random between 1 and 2; later multiplied by blob speed multiplier.
         speed: 1 + Math.random(),
-        // Normal blobs have a random color; special ones will be marked and rendered differently.
         color: 'hsl(' + Math.random() * 360 + ', 100%, 50%)',
-        special: false
+        special: false,
+        specialType: null  // will be "rapid" or "spray" if special
       };
       if (i === specialIndex) {
         blob.special = true;
-        // Optionally override color so that it's more distinctive
-        blob.color = 'magenta';
+        // Randomly choose the special type.
+        if (Math.random() < 0.5) {
+          blob.specialType = "rapid";
+          blob.color = "magenta"; // distinct color for rapid
+        } else {
+          blob.specialType = "spray";
+          blob.color = "orange"; // distinct color for spray
+        }
       }
       blobs.push(blob);
     }
   }
 
-  // Update game state: move bullets, blobs, check collisions, and game over condition
+  // Update game state
   function update() {
-    // Check if the special fire effect should end
-    if (specialFireActive && Date.now() > specialFireEndTime) {
-      specialFireActive = false;
+    // Reset power-up levels if their timers have expired
+    if (rapidFireActive && Date.now() > rapidFireEndTime) {
+      rapidFireActive = false;
+      rapidFireLevel = 1;
     }
-
-    // Determine bullet firing interval based on special fire status:
-    // Normal fire every 10 frames; if special, every 5 frames.
-    const bulletInterval = specialFireActive ? 5 : 10;
+    if (sprayActive && Date.now() > sprayEndTime) {
+      sprayActive = false;
+      sprayLevel = 1;
+    }
+    
+    // Determine bullet firing interval.
+    // Normal fire: every 10 frames; with rapid fire, interval reduces proportionally (but not less than 2).
+    let bulletInterval = Math.max(10 / rapidFireLevel, 2);
     bulletFireTimer++;
     if (bulletFireTimer > bulletInterval) {
-      bullets.push({
-        x: player.x + player.width / 2,
-        y: player.y,
-        radius: 5,
-        speed: 7 * bulletSpeedMultiplier
-      });
+      const bulletSpeed = 7;
+      // If spray is active, fire multiple bullets in a spread.
+      if (sprayActive) {
+        // Number of bullets = 1 + 2 * sprayLevel (level1 gives 3, level2 gives 5, etc.)
+        const numBullets = 1 + 2 * sprayLevel;
+        // Total spread angle (radians) – here 60° (PI/3)
+        const spreadAngle = Math.PI / 3;
+        // Angle between bullets
+        const angleStep = numBullets > 1 ? spreadAngle / (numBullets - 1) : 0;
+        // Starting angle offset so that bullets are centered.
+        const startAngle = -spreadAngle / 2;
+        for (let i = 0; i < numBullets; i++) {
+          let angle = startAngle + i * angleStep;
+          bullets.push({
+            x: player.x + player.width / 2,
+            y: player.y,
+            radius: 5,
+            vx: bulletSpeed * Math.sin(angle),
+            vy: -bulletSpeed * Math.cos(angle)
+          });
+        }
+      } else {
+        // Normal (or rapid) single bullet
+        bullets.push({
+          x: player.x + player.width / 2,
+          y: player.y,
+          radius: 5,
+          vx: 0,
+          vy: -bulletSpeed
+        });
+      }
       bulletFireTimer = 0;
     }
 
     // Spawn blob clusters periodically
     blobSpawnTimer++;
-    if (blobSpawnTimer > 50) { // Adjust spawn frequency as needed
+    if (blobSpawnTimer > 50) {
       spawnCluster();
       blobSpawnTimer = 0;
     }
 
-    // Update bullets: move them upward
+    // Update bullets: move according to their velocity
     for (let i = bullets.length - 1; i >= 0; i--) {
-      bullets[i].y -= bullets[i].speed;
+      bullets[i].x += bullets[i].vx;
+      bullets[i].y += bullets[i].vy;
       if (bullets[i].y < 0) {
         bullets.splice(i, 1);
       }
     }
 
-    // Update blobs: move them downward
+    // Get current blob speed multiplier based on score level.
+    let speedMult = getBlobSpeedMultiplier();
+
+    // Update blobs: move them downward with speed multiplier.
     for (let i = blobs.length - 1; i >= 0; i--) {
-      blobs[i].y += blobs[i].speed;
-      // Check if any blob reaches the player's line
+      blobs[i].y += blobs[i].speed * speedMult;
+      // Game over if any blob reaches the player's line.
       if (blobs[i].y + blobs[i].radius >= player.y) {
         gameOver = true;
         return;
@@ -130,27 +175,28 @@
       }
     }
 
-    // Check for collisions between bullets and blobs
+    // Check for collisions between bullets and blobs.
     for (let i = blobs.length - 1; i >= 0; i--) {
       for (let j = bullets.length - 1; j >= 0; j--) {
         const dx = blobs[i].x - bullets[j].x;
         const dy = blobs[i].y - bullets[j].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < blobs[i].radius + bullets[j].radius) {
-          // If a special blob is hit, activate the special fire effect (2x faster) for 10 seconds.
+          // If a special blob is hit, activate and multiply its effect, capped at level 5.
           if (blobs[i].special) {
-            specialFireActive = true;
-            specialFireEndTime = Date.now() + 10000; // 10 seconds
-          } else {
-            // For normal blobs, apply a random power-up: either boost player speed or bullet speed.
-            if (Math.random() < 0.5) {
-              playerSpeedMultiplier += 0.1;
-            } else {
-              bulletSpeedMultiplier += 0.1;
+            if (blobs[i].specialType === "rapid") {
+              rapidFireActive = true;
+              rapidFireLevel = Math.min(rapidFireLevel + 1, 5);
+              rapidFireEndTime = Date.now() + 10000;
+            } else if (blobs[i].specialType === "spray") {
+              sprayActive = true;
+              sprayLevel = Math.min(sprayLevel + 1, 5);
+              sprayEndTime = Date.now() + 10000;
             }
+          } else {
+            // For normal blobs, you can optionally boost other parameters.
           }
           score += 10;
-          // Remove the blob and bullet upon collision
           blobs.splice(i, 1);
           bullets.splice(j, 1);
           break;
@@ -159,15 +205,15 @@
     }
   }
 
-  // Draw the game elements
+  // Draw everything on canvas.
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw the player (ship)
+    // Draw player ship.
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x, player.y, player.width, player.height);
 
-    // Draw bullets
+    // Draw bullets.
     ctx.fillStyle = 'yellow';
     bullets.forEach(bullet => {
       ctx.beginPath();
@@ -175,17 +221,17 @@
       ctx.fill();
     });
 
-    // Draw blobs
+    // Draw blobs.
     blobs.forEach(blob => {
       ctx.fillStyle = blob.color;
       ctx.beginPath();
       ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
       ctx.fill();
-      
-      // If the blob is special, draw an additional pulsating outline.
+      // For special blobs, draw a pulsating outline.
       if (blob.special) {
         let pulsate = Math.abs(Math.sin(Date.now() / 200)) * 5;
-        ctx.strokeStyle = 'cyan';
+        let outlineColor = blob.specialType === "rapid" ? 'cyan' : 'blue';
+        ctx.strokeStyle = outlineColor;
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(blob.x, blob.y, blob.radius + pulsate, 0, Math.PI * 2);
@@ -193,12 +239,17 @@
       }
     });
 
-    // Draw score
+    // Draw score and levels.
     ctx.fillStyle = 'white';
     ctx.font = '20px Arial';
+    ctx.textAlign = 'left';
     ctx.fillText('Score: ' + score, 10, 30);
+    ctx.fillText('Rapid Fire Level: ' + rapidFireLevel, 10, 60);
+    ctx.fillText('Spray Level: ' + sprayLevel, 10, 90);
+    const blobLevel = Math.floor(score / 1000) + 1;
+    ctx.fillText('Blob Speed Level: ' + blobLevel, 10, 120);
 
-    // If game over, display message
+    // Draw game over message if needed.
     if (gameOver) {
       ctx.fillStyle = 'red';
       ctx.font = '50px Arial';
@@ -207,14 +258,14 @@
     }
   }
 
-  // Main game loop
+  // Main game loop.
   function gameLoop() {
     if (!gameOver) {
       update();
       draw();
       requestAnimationFrame(gameLoop);
     } else {
-      draw();  // Final draw to show the game over message
+      draw();
     }
   }
 
