@@ -33,6 +33,9 @@
   let score = 0;
   let gameOver = false;
 
+  let bombCount = 3;
+  let bombFlashTimer = 0;
+
   // Permanent power-up levels (accumulated via boxes)
   // The displayed level is (1 + permanentLevel)
   // Cap: Rapid Fire max displayed level 10, Spray max displayed level 5.
@@ -41,7 +44,7 @@
 
   // Boss variables
   let boss = null;
-  let nextBossScore = 5000;  // When score reaches 5000, spawn boss
+  let nextBossScore = 3500;  // When score reaches 3500, spawn boss
 
   // Blob speed multiplier based on score.
   function getBlobSpeedMultiplier() {
@@ -58,6 +61,27 @@
       player.x = canvas.width - player.width;
     }
   });
+
+  document.addEventListener('keydown', function(e) {
+  if (e.code === 'Space') {
+    if (bombCount > 0) {
+      bombCount--;
+      // Apply bomb effect to all blobs:
+      for (let i = blobs.length - 1; i >= 0; i--) {
+        blobs[i].health -= 100;
+        if (blobs[i].health <= 0) {
+          score += 10;
+          blobs.splice(i, 1);
+        }
+      }
+      // Apply bomb effect to boss if it exists:
+      if (boss) {
+        boss.health -= 100;
+      }
+      bombFlashTimer = 10; // Trigger flash effect for 10 frames
+    }
+  }
+});
 
   // Spawn a cluster of blobs (3-8 per cluster).
   // Each blob now gets a random health between 1 and 3.
@@ -245,6 +269,9 @@
           if (boss.health <= 0) {
             // Boss defeated.
             boss = null;
+            permanentRapidLevel = 4; // Set rapid fire to displayed level 5 (1+4)
+            permanentSprayLevel = 0; // Set spray to displayed level 1 (1+0)
+            bombCount = 3;
           }
           break;
         }
@@ -253,7 +280,7 @@
       // Spawn a boss if score reaches the next threshold.
       if (score >= nextBossScore) {
         spawnBoss();
-        nextBossScore += 5000;
+        nextBossScore += 3500;
       }
     }
 
@@ -357,6 +384,8 @@
       ctx.fillText(box.health, box.x + box.width / 2, doorY + doorHeight - 4);
     });
 
+    
+
     // Display score and power-up levels.
     ctx.fillStyle = 'white';
     ctx.font = '20px Arial';
@@ -366,6 +395,17 @@
     ctx.fillText('Spray Level: ' + (1 + permanentSprayLevel), 10, 90);
     const blobLevel = Math.floor(score / 1000) + 1;
     ctx.fillText('Blob Speed Level: ' + blobLevel, 10, 120);
+
+
+        // (Optionally display bomb count)
+    ctx.fillText('Bombs: ' + bombCount, 10, 150);
+
+    // Draw bomb flash effect if active.
+    if (bombFlashTimer > 0) {
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      bombFlashTimer--;
+    }
 
     if (gameOver) {
       ctx.fillStyle = 'red';
