@@ -166,21 +166,71 @@
     bulletFireTimer++;
     if (bulletFireTimer > bulletInterval) {
       const bulletSpeed = 7;
+      
       // If the player has any spray upgrade, use spread firing.
       if (permanentSprayLevel > 0) {
-        let effectiveSpray = 1 + permanentSprayLevel;
-        const numBullets = 1 + 2 * effectiveSpray;
-        const spreadAngle = Math.PI / 3;
-        const angleStep = numBullets > 1 ? spreadAngle / (numBullets - 1) : 0;
-        const startAngle = -spreadAngle / 2;
-        for (let i = 0; i < numBullets; i++) {
-          let angle = startAngle + i * angleStep;
+        const numBullets = 1 + permanentSprayLevel; // one new stream per level
+        const bulletSpeed = 7;
+        if (numBullets === 1) {
+          // Special case: 1 stream straight up.
           bullets.push({
             x: player.x + player.width / 2,
             y: player.y,
             radius: 5,
-            vx: bulletSpeed * Math.sin(angle),
-            vy: -bulletSpeed * Math.cos(angle)
+            vx: 0,
+            vy: -bulletSpeed
+          });
+        } else if (numBullets === 2) {
+          // Special case: 2 streams, both straight up but offset left/right.
+          bullets.push({
+            x: player.x + player.width / 2 - player.width / 4,
+            y: player.y,
+            radius: 5,
+            vx: 0,
+            vy: -bulletSpeed
+          });
+          bullets.push({
+            x: player.x + player.width / 2 + player.width / 4,
+            y: player.y,
+            radius: 5,
+            vx: 0,
+            vy: -bulletSpeed
+          });
+        } else {
+          // Generic case for 3 or more streams.
+          const maxAngle = 0.3; // maximum deviation in radians
+          let angles = [];
+          if (numBullets % 2 === 1) {
+            // Odd number: symmetric distribution with one bullet at 0.
+            const half = Math.floor(numBullets / 2);
+            for (let i = -half; i <= half; i++) {
+              angles.push(i * (maxAngle / half));
+            }
+          } else {
+            // Even number: linearly spaced and force the bullet closest to 0 to 0.
+            for (let i = 0; i < numBullets; i++) {
+              let angle = -maxAngle + i * (2 * maxAngle / (numBullets - 1));
+              angles.push(angle);
+            }
+            let closestIndex = 0;
+            let minAbs = Math.abs(angles[0]);
+            for (let i = 1; i < angles.length; i++) {
+              if (Math.abs(angles[i]) < minAbs) {
+                minAbs = Math.abs(angles[i]);
+                closestIndex = i;
+              }
+            }
+            angles[closestIndex] = 0;
+          }
+          // Fire one bullet for each computed angle.
+          angles.forEach(angle => {
+            bullets.push({
+              x: player.x + player.width / 2,
+              y: player.y,
+              radius: 5,
+              vx: bulletSpeed * Math.sin(angle),
+              vy: -bulletSpeed * Math.cos(angle)
+            });
           });
         }
       } else {
@@ -193,13 +243,14 @@
           vy: -bulletSpeed
         });
       }
+
       bulletFireTimer = 0;
     }
 
     // Adjust blob spawn rate: slower in the first minute.
     blobSpawnTimer++;
     const elapsedTime = Date.now() - startTime;
-    const spawnInterval = elapsedTime < 60000 ? 100 : 50;
+    const spawnInterval = elapsedTime < 60000 ? 200 : 50;
     if (blobSpawnTimer > spawnInterval) {
       spawnCluster();
       blobSpawnTimer = 0;
@@ -234,7 +285,7 @@
                 permanentRapidLevel++;
               }
             } else if (box.type === "spray") {
-              if (1 + permanentSprayLevel < 3) {
+              if (1 + permanentSprayLevel < 10) {
                 permanentSprayLevel++;
               }
             }
@@ -280,9 +331,9 @@
           if (boss.health <= 0) {
             // Boss defeated.
             boss = null;
-            permanentRapidLevel = 4; // Set rapid fire to displayed level 5 (1+4)
-            permanentSprayLevel = 0; // Set spray to displayed level 1 (1+0)
-            bombCount = 3;
+            permanentRapidLevel = 3; // Set rapid fire to displayed level 5 (1+4)
+            permanentSprayLevel = 1; // Set spray to displayed level 1 (1+0)
+            bombCount = bombCount + 2; // 2 new bombs!
           }
           break;
         }
