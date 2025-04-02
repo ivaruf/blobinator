@@ -8,7 +8,7 @@
   </style>
 </head>
 <body>
-<canvas id="gameCanvas" height="1024px" width="768x"></canvas>
+<canvas id="gameCanvas" height="1024" width="768"></canvas>
 <script>
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
@@ -37,10 +37,11 @@
   let bombFlashTimer = 0;
 
   // Permanent power-up levels (accumulated via boxes)
-  // The displayed level is (1 + permanentLevel)
-  // Cap: Rapid Fire max displayed level 10, Spray max displayed level 5.
-  let permanentRapidLevel = 0; // cap: 9 (so displayed becomes 10)
-  let permanentSprayLevel = 0; // cap: 4 (so displayed becomes 5)
+  // Displayed level = (1 + permanentLevel)
+  // Cap: Rapid Fire up to 10, Spray up to 10, Bullet up to 5.
+  let permanentRapidLevel = 0;   // cap: 9 (displayed: 1-10)
+  let permanentSprayLevel = 0;   // cap: 9 (displayed: 1-10)
+  let permanentBulletLevel = 0;  // cap: 4 (displayed: 1-5)
 
   // Boss variables
   let boss = null;
@@ -52,16 +53,17 @@
     return 1 + (blobLevel - 1) * 0.1;
   }
 
+  // Touch support for mobile.
   canvas.addEventListener('touchmove', (e) => {
-  e.preventDefault(); // Prevent scrolling
-  const touch = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  player.x = touch.clientX - rect.left - player.width / 2;
-  if (player.x < 0) player.x = 0;
-  if (player.x + player.width > canvas.width) {
-    player.x = canvas.width - player.width;
-  }
-});
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    player.x = touch.clientX - rect.left - player.width / 2;
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > canvas.width) {
+      player.x = canvas.width - player.width;
+    }
+  });
 
   // Update player's position with the mouse.
   canvas.addEventListener('mousemove', (e) => {
@@ -74,25 +76,25 @@
   });
 
   document.addEventListener('keydown', function(e) {
-  if (e.code === 'Space') {
-    if (bombCount > 0) {
-      bombCount--;
-      // Apply bomb effect to all blobs:
-      for (let i = blobs.length - 1; i >= 0; i--) {
-        blobs[i].health -= 100;
-        if (blobs[i].health <= 0) {
-          score += 10;
-          blobs.splice(i, 1);
+    if (e.code === 'Space') {
+      if (bombCount > 0) {
+        bombCount--;
+        // Apply bomb effect to all blobs:
+        for (let i = blobs.length - 1; i >= 0; i--) {
+          blobs[i].health -= 100;
+          if (blobs[i].health <= 0) {
+            score += 10;
+            blobs.splice(i, 1);
+          }
         }
+        // Apply bomb effect to boss if it exists:
+        if (boss) {
+          boss.health -= 100;
+        }
+        bombFlashTimer = 10; // Trigger flash effect for 10 frames
       }
-      // Apply bomb effect to boss if it exists:
-      if (boss) {
-        boss.health -= 100;
-      }
-      bombFlashTimer = 10; // Trigger flash effect for 10 frames
     }
-  }
-});
+  });
 
   // Spawn a cluster of blobs (3-8 per cluster).
   // Each blob now gets a random health between 1 and 3.
@@ -118,11 +120,23 @@
   }
 
   // Spawn a power-up box of a specific type at a random location.
-  // When isInitial is true, use a hit count between 20 and 50.
-  // Otherwise (for respawns) use a range between 20 and 100.
+  // When isInitial is true, use a hit count between 10 and 20.
+  // Otherwise (for respawns) use a range between 10 and 50.
+  // Each box gets a distinct color based on its type.
   function spawnBoxForType(type, isInitial = false) {
     const boxWidth = 40, boxHeight = 40;
     const min = 10, max = isInitial ? 20 : 50;
+    let boxColor, doorColor;
+    if(type === "rapid") {
+      boxColor = "#1E90FF";    // DodgerBlue
+      doorColor = "#1874CD";   // darker blue
+    } else if(type === "spray") {
+      boxColor = "#FFA500";    // Orange
+      doorColor = "#CC8400";   // darker orange
+    } else if(type === "bullet") {
+      boxColor = "#32CD32";    // LimeGreen
+      doorColor = "#2E8B57";   // SeaGreen
+    }
     const newBox = {
       x: Math.random() * (canvas.width - boxWidth),
       y: Math.random() * (canvas.height / 3),
@@ -130,21 +144,39 @@
       height: boxHeight,
       type: type,
       health: Math.floor(Math.random() * (max - min + 1)) + min,
-      createdTime: Date.now()
+      createdTime: Date.now(),
+      boxColor: boxColor,
+      doorColor: doorColor
     };
     boxes.push(newBox);
   }
 
-  // Spawn both power-up boxes initially.
+  // Spawn boxes based on type probabilities.
+  // Bullet: 10%, Spray: 30%, Rapid: 60%.
+  function spawnRandomBox(isInitial = false) {
+    const rand = Math.random();
+    let type;
+    if(rand < 0.1) {
+      type = "bullet";
+    } else if(rand < 0.4) {
+      type = "spray";
+    } else {
+      type = "rapid";
+    }
+    spawnBoxForType(type, isInitial);
+  }
+  
+  // Spawn initial boxes: one of each type.
   function spawnBoxes() {
     spawnBoxForType("rapid", true);
     spawnBoxForType("spray", true);
+    spawnBoxForType("bullet", true);
   }
   spawnBoxes();
 
   // Spawn the boss if conditions are met.
   function spawnBoss() {
-    // Boss appears as a blob 4x the size with 2000 HP.
+    // Boss appears as a blob 4x the size with 500 HP.
     let bossRadius = 80; // assuming normal blob radius is 20
     boss = {
       x: Math.random() * (canvas.width - bossRadius*2) + bossRadius,
@@ -166,48 +198,53 @@
     bulletFireTimer++;
     if (bulletFireTimer > bulletInterval) {
       const bulletSpeed = 7;
+      // Calculate bullet damage and color based on bullet power-up.
+      const bulletDamage = 1 + permanentBulletLevel;
+      const bulletColor = permanentBulletLevel > 0 ? "cyan" : "yellow";
       
       // If the player has any spray upgrade, use spread firing.
       if (permanentSprayLevel > 0) {
         const numBullets = 1 + permanentSprayLevel; // one new stream per level
-        const bulletSpeed = 7;
         if (numBullets === 1) {
-          // Special case: 1 stream straight up.
           bullets.push({
             x: player.x + player.width / 2,
             y: player.y,
             radius: 5,
             vx: 0,
-            vy: -bulletSpeed
+            vy: -bulletSpeed,
+            damage: bulletDamage,
+            color: bulletColor
           });
         } else if (numBullets === 2) {
-          // Special case: 2 streams, both straight up but offset left/right.
+          // Two streams, both straight up but offset.
           bullets.push({
             x: player.x + player.width / 2 - player.width / 4,
             y: player.y,
             radius: 5,
             vx: 0,
-            vy: -bulletSpeed
+            vy: -bulletSpeed,
+            damage: bulletDamage,
+            color: bulletColor
           });
           bullets.push({
             x: player.x + player.width / 2 + player.width / 4,
             y: player.y,
             radius: 5,
             vx: 0,
-            vy: -bulletSpeed
+            vy: -bulletSpeed,
+            damage: bulletDamage,
+            color: bulletColor
           });
         } else {
           // Generic case for 3 or more streams.
           const maxAngle = 0.3; // maximum deviation in radians
           let angles = [];
           if (numBullets % 2 === 1) {
-            // Odd number: symmetric distribution with one bullet at 0.
             const half = Math.floor(numBullets / 2);
             for (let i = -half; i <= half; i++) {
               angles.push(i * (maxAngle / half));
             }
           } else {
-            // Even number: linearly spaced and force the bullet closest to 0 to 0.
             for (let i = 0; i < numBullets; i++) {
               let angle = -maxAngle + i * (2 * maxAngle / (numBullets - 1));
               angles.push(angle);
@@ -222,28 +259,30 @@
             }
             angles[closestIndex] = 0;
           }
-          // Fire one bullet for each computed angle.
           angles.forEach(angle => {
             bullets.push({
               x: player.x + player.width / 2,
               y: player.y,
               radius: 5,
               vx: bulletSpeed * Math.sin(angle),
-              vy: -bulletSpeed * Math.cos(angle)
+              vy: -bulletSpeed * Math.cos(angle),
+              damage: bulletDamage,
+              color: bulletColor
             });
           });
         }
       } else {
-        // Otherwise, fire a single bullet.
+        // Single bullet if no spray upgrade.
         bullets.push({
           x: player.x + player.width / 2,
           y: player.y,
           radius: 5,
           vx: 0,
-          vy: -bulletSpeed
+          vy: -bulletSpeed,
+          damage: bulletDamage,
+          color: bulletColor
         });
       }
-
       bulletFireTimer = 0;
     }
 
@@ -274,23 +313,25 @@
       for (let j = bullets.length - 1; j >= 0; j--) {
         if (bullets[j].x >= box.x && bullets[j].x <= box.x + box.width &&
             bullets[j].y >= doorY && bullets[j].y <= box.y + box.height) {
-          // Subtract one hit from the box.
-          box.health--;
+          // Use bullet damage instead of a fixed 1.
+          box.health -= bullets[j].damage;
           bullets.splice(j, 1);
-          // When the box health reaches zero, award the power-up (respecting the caps),
-          // remove the box, and respawn one.
           if (box.health <= 0) {
             if (box.type === "rapid") {
-              if (1 + permanentRapidLevel < 100) {
+              if (1 + permanentRapidLevel < 10) {
                 permanentRapidLevel++;
               }
             } else if (box.type === "spray") {
               if (1 + permanentSprayLevel < 10) {
                 permanentSprayLevel++;
               }
+            } else if (box.type === "bullet") {
+              if (1 + permanentBulletLevel < 2) {
+                permanentBulletLevel++;
+              }
             }
             boxes.splice(i, 1);
-            spawnBoxForType(box.type); // Subsequent boxes use the 20-100 range.
+            spawnRandomBox();
           }
           break;
         }
@@ -315,48 +356,45 @@
     // Update boss if it exists.
     if (boss) {
       boss.y += boss.speed * speedMult;
-      // Check collision with player.
       if (boss.y + boss.radius >= player.y) {
         gameOver = true;
         return;
       }
-      // Check bullet collisions with boss.
       for (let i = bullets.length - 1; i >= 0; i--) {
         const dx = boss.x - bullets[i].x;
         const dy = boss.y - bullets[i].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < boss.radius + bullets[i].radius) {
-          boss.health -= 1;
+          // Use bullet damage property.
+          boss.health -= bullets[i].damage;
           bullets.splice(i, 1);
           if (boss.health <= 0) {
             // Boss defeated.
             boss = null;
-            permanentRapidLevel = 3; // Set rapid fire to displayed level 5 (1+4)
-            permanentSprayLevel = 1; // Set spray to displayed level 1 (1+0)
-            bombCount = bombCount + 2; // 2 new bombs!
+            permanentRapidLevel = 3; // Set rapid fire to displayed level 4 (1+3)
+            permanentSprayLevel = 1; // Set spray to displayed level 2 (1+1)
+            bombCount += 2;        // Award 2 new bombs.
           }
           break;
         }
       }
     } else {
-      // Spawn a boss if score reaches the next threshold.
       if (score >= nextBossScore) {
         spawnBoss();
         nextBossScore += 3500;
       }
     }
 
-    // Check for collisions between bullets and regular blobs.
+    // Check collisions between bullets and regular blobs.
     for (let i = blobs.length - 1; i >= 0; i--) {
       for (let j = bullets.length - 1; j >= 0; j--) {
         const dx = blobs[i].x - bullets[j].x;
         const dy = blobs[i].y - bullets[j].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < blobs[i].radius + bullets[j].radius) {
-          // Subtract 1 health per hit.
-          blobs[i].health -= 1;
+          // Use bullet damage property.
+          blobs[i].health -= bullets[j].damage;
           bullets.splice(j, 1);
-          // If blob's health is depleted, remove it and award score.
           if (blobs[i].health <= 0) {
             score += 10;
             blobs.splice(i, 1);
@@ -375,9 +413,9 @@
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x, player.y, player.width, player.height);
 
-    // Draw bullets.
-    ctx.fillStyle = 'yellow';
+    // Draw bullets using their individual color.
     bullets.forEach(bullet => {
+      ctx.fillStyle = bullet.color || 'yellow';
       ctx.beginPath();
       ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -389,7 +427,6 @@
       ctx.beginPath();
       ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
       ctx.fill();
-      // Draw a ring representing the blob's health.
       let healthFraction = blob.health / blob.maxHealth;
       ctx.beginPath();
       ctx.arc(blob.x, blob.y, blob.radius + 5, -Math.PI / 2, -Math.PI / 2 + healthFraction * 2 * Math.PI);
@@ -404,65 +441,53 @@
       ctx.beginPath();
       ctx.arc(boss.x, boss.y, boss.radius, 0, Math.PI * 2);
       ctx.fill();
-      // Draw boss health ring.
       let bossHealthFraction = boss.health / boss.maxHealth;
       ctx.beginPath();
       ctx.arc(boss.x, boss.y, boss.radius + 5, -Math.PI / 2, -Math.PI / 2 + bossHealthFraction * 2 * Math.PI);
       ctx.strokeStyle = "orange";
       ctx.lineWidth = 4;
       ctx.stroke();
-      // Optionally display boss health in text.
       ctx.fillStyle = 'white';
       ctx.font = 'bold 16px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(boss.health, boss.x, boss.y + 5);
     }
 
-    // Draw power-up boxes with a brick-like appearance.
+    // Draw power-up boxes with brick-like appearance and type-specific colors.
     boxes.forEach(box => {
-      // Draw brick background.
-      ctx.fillStyle = 'firebrick';
+      ctx.fillStyle = box.boxColor;
       ctx.fillRect(box.x, box.y, box.width, box.height);
-      // Draw a thick black border (mortar).
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 3;
       ctx.strokeRect(box.x, box.y, box.width, box.height);
-      // Draw mortar lines.
       ctx.beginPath();
       ctx.moveTo(box.x, box.y + box.height / 2);
       ctx.lineTo(box.x + box.width, box.y + box.height / 2);
       ctx.moveTo(box.x + box.width / 2, box.y);
       ctx.lineTo(box.x + box.width / 2, box.y + box.height);
       ctx.stroke();
-      // Define door area (bottom 20%) and draw it as a darker brick.
       const doorHeight = box.height * 0.2;
       const doorY = box.y + box.height - doorHeight;
-      ctx.fillStyle = '#8B0000';
+      ctx.fillStyle = box.doorColor;
       ctx.fillRect(box.x, doorY, box.width, doorHeight);
-      // Draw current hit count on the door.
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(box.health, box.x + box.width / 2, doorY + doorHeight - 4);
     });
 
-    
-
-    // Display score and power-up levels.
+    // HUD
     ctx.fillStyle = 'white';
     ctx.font = '20px Arial';
     ctx.textAlign = 'left';
     ctx.fillText('Score: ' + score, 10, 30);
     ctx.fillText('Rapid Fire Level: ' + (1 + permanentRapidLevel), 10, 60);
     ctx.fillText('Spray Level: ' + (1 + permanentSprayLevel), 10, 90);
+    ctx.fillText('Bullet Level: ' + (1 + permanentBulletLevel), 10, 120);
     const blobLevel = Math.floor(score / 1000) + 1;
-    ctx.fillText('Blob Speed Level: ' + blobLevel, 10, 120);
+    ctx.fillText('Blob Speed Level: ' + blobLevel, 10, 150);
+    ctx.fillText('Bombs: ' + bombCount, 10, 180);
 
-
-        // (Optionally display bomb count)
-    ctx.fillText('Bombs: ' + bombCount, 10, 150);
-
-    // Draw bomb flash effect if active.
     if (bombFlashTimer > 0) {
       ctx.fillStyle = "rgba(255,255,255,0.5)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
