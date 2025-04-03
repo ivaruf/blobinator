@@ -65,6 +65,33 @@
     }
   });
 
+  // Add a double-tap detector for mobile bomb deployment.
+  let lastTap = 0;
+  canvas.addEventListener('touchend', function(e) {
+    let currentTime = new Date().getTime();
+    let tapLength = currentTime - lastTap;
+    if (tapLength > 0 && tapLength < 300) {  // Double-tap detected (adjust threshold if needed)
+      if (bombCount > 0) {
+        bombCount--;
+        // Apply bomb effect to all blobs:
+        for (let i = blobs.length - 1; i >= 0; i--) {
+          blobs[i].health -= 100;
+          if (blobs[i].health <= 0) {
+            score += 10;
+            blobs.splice(i, 1);
+          }
+        }
+        // Apply bomb effect to boss if it exists:
+        if (boss) {
+          boss.health -= 100;
+        }
+        bombFlashTimer = 10; // Trigger flash effect for 10 frames
+      }
+      e.preventDefault();
+    }
+    lastTap = currentTime;
+  });
+
   // Update player's position with the mouse.
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
