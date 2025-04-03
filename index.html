@@ -134,8 +134,8 @@
         radius: bossRadius,
         speed: 1,
         color: 'red',
-        health: 500,
-        maxHealth: 500,
+        health: 500 + blobLevel * 20,
+        maxHealth: health,
         isBoss: true
       };
     }
@@ -392,9 +392,9 @@
             bullets.splice(i, 1);
             if (boss.health <= 0) {
               boss = null;
-              permanentRapidLevel = 2;
-              permanentSprayLevel = 2;
-              permanentBulletLevel = permanentBulletLevel === 5 ? 2 : 1;
+              permanentRapidLevel = 1;
+              permanentSprayLevel = 1;
+              permanentBulletLevel = permanentBulletLevel > 4 ? 1 : 0;
               bombCount = bombCount >= 3 ? bombCount + 1 : (bombCount === 2 ? bombCount + 2 : 3);
             }
             break;
