@@ -109,6 +109,7 @@
     let levelUpDisplay = 0; // Timer for level up display
     let baseEnemyHealth = 1;
     let baseEnemySpeed = 1;
+    let bossDefeatedThisLevel = true; // Start true so first level can progress
 
     // Skill-based stats and temporary boosts
     let killStreak = 0;
@@ -304,6 +305,13 @@
         maxHealth: health,
         isBoss: true
       };
+      bossDefeatedThisLevel = false; // Mark that boss must be defeated for level up
+    }
+
+    // Calculate progressive level score requirements
+    function getNextLevelScore(level) {
+      // Progressive scaling: 5000, 7500, 10000, 12500, 15000, etc.
+      return 2500 * (level * 2 + 1);
     }
 
     // Level up function - clears enemies and power-ups, increases difficulty
@@ -315,21 +323,34 @@
       blobs = [];
       boxes = [];
       boss = null;
+      bossDefeatedThisLevel = true; // Reset boss defeat status for new level
       
-      // Reset all temporary power-ups
-      permanentRapidLevel = 0;
-      permanentSprayLevel = 0;
-      permanentBulletLevel = 0;
-      permanentShieldLevel = 0;
-      permanentSpeedLevel = 0;
-      permanentMultiLevel = 0;
-      hasRapidPowerUp = false;
-      hasSprayPowerUp = false;
-      hasBulletPowerUp = false;
-      hasShieldPowerUp = false;
-      hasSpeedPowerUp = false;
-      hasMultiPowerUp = false;
-      playerShield = 0;
+      // Retain level 2 of maxed out power-ups, reset others
+      const maxedRapid = permanentRapidLevel >= 10;
+      const maxedSpray = permanentSprayLevel >= 10;
+      const maxedBullet = permanentBulletLevel >= 2;
+      const maxedShield = permanentShieldLevel >= 5;
+      const maxedSpeed = permanentSpeedLevel >= 5;
+      const maxedMulti = permanentMultiLevel >= 3;
+      
+      // Reset power-ups but keep level 2 for maxed ones
+      permanentRapidLevel = maxedRapid ? 2 : 0;
+      permanentSprayLevel = maxedSpray ? 2 : 0;
+      permanentBulletLevel = maxedBullet ? 1 : 0; // Bullet max is 2, so keep 1
+      permanentShieldLevel = maxedShield ? 2 : 0;
+      permanentSpeedLevel = maxedSpeed ? 2 : 0;
+      permanentMultiLevel = maxedMulti ? 1 : 0; // Multi max is 3, so keep 1
+      
+      // Update power-up flags based on retained levels
+      hasRapidPowerUp = permanentRapidLevel > 0;
+      hasSprayPowerUp = permanentSprayLevel > 0;
+      hasBulletPowerUp = permanentBulletLevel > 0;
+      hasShieldPowerUp = permanentShieldLevel > 0;
+      hasSpeedPowerUp = permanentSpeedLevel > 0;
+      hasMultiPowerUp = permanentMultiLevel > 0;
+      
+      // Reset shield to base amount for retained shield level
+      playerShield = permanentShieldLevel > 0 ? permanentShieldLevel * 5 : 0;
       
       // Reset skill-based progression for new level
       killStreak = 0;
@@ -339,8 +360,8 @@
       // Increase base difficulty for next level
       baseEnemySpeed += 0.1;
       
-      // Set next level threshold
-      nextLevelScore = currentLevel * 5000;
+      // Set next level threshold with progressive scaling
+      nextLevelScore = getNextLevelScore(currentLevel);
       
       // Spawn new power-up boxes for the level
       spawnBoxes();
@@ -378,10 +399,11 @@
 
       // Reset level system
       currentLevel = 1;
-      nextLevelScore = 5000;
+      nextLevelScore = getNextLevelScore(1); // Use progressive scaling from start
       levelUpDisplay = 0;
       baseEnemyHealth = 1;
       baseEnemySpeed = 1;
+      bossDefeatedThisLevel = true;
 
       // Reset Skill-based stats
       killStreak = 0;
@@ -706,8 +728,8 @@
         }
       }
 
-      // Check for level up
-      if (score >= nextLevelScore) {
+      // Check for level up - only if boss is defeated and score reached
+      if (score >= nextLevelScore && bossDefeatedThisLevel) {
         levelUp();
       }
 
@@ -755,6 +777,7 @@
             bullets.splice(i, 1);
             if (boss.health <= 0) {
               boss = null;
+              bossDefeatedThisLevel = true; // Mark boss as defeated for level progression
               // Bosses now give permanent bonuses instead of resets
               score += 500;
               bombCount = Math.min(bombCount + 2, 10);
