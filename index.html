@@ -942,143 +942,260 @@
         ctx.fillText(box.health, box.x + box.width / 2, doorY + doorHeight - 4);
       });
 
-      ctx.fillStyle = 'white';
-      ctx.font = '20px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('Score: ' + score, 10, 30);
-      ctx.fillText('Difficulty: ' + difficulty.charAt(0).toUpperCase() + difficulty.slice(1), 10, 60);
+      // Enhanced HUD with graphics and animations
+      ctx.save();
       
-      // Power-up icons and levels (only show if acquired, no names)
-      let yOffset = 90;
-      let xOffset = 10;
+      // HUD Background Panel
+      const hudWidth = 280;
+      const hudHeight = 140;
+      const hudGradient = ctx.createLinearGradient(0, 0, hudWidth, hudHeight);
+      hudGradient.addColorStop(0, 'rgba(0, 20, 40, 0.9)');
+      hudGradient.addColorStop(1, 'rgba(0, 10, 20, 0.9)');
+      
+      ctx.fillStyle = hudGradient;
+      ctx.fillRect(5, 5, hudWidth, hudHeight);
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(5, 5, hudWidth, hudHeight);
+      
+      // Animated Score Display
+      const scoreX = 15;
+      const scoreY = 30;
+      const scoreGlow = Math.sin(Date.now() / 300) * 0.3 + 0.7;
+      
+      ctx.shadowColor = '#00FFFF';
+      ctx.shadowBlur = 10 * scoreGlow;
+      ctx.fillStyle = `rgba(255, 255, 255, ${scoreGlow})`;
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText('SCORE', scoreX, scoreY);
+      
+      ctx.shadowBlur = 5;
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(score.toLocaleString(), scoreX, scoreY + 25);
+      ctx.shadowBlur = 0;
+      
+      // Difficulty Badge
+      const diffX = scoreX + 120;
+      const diffBadgeGradient = ctx.createRadialGradient(diffX + 15, scoreY - 5, 0, diffX + 15, scoreY - 5, 20);
+      if (difficulty === 'easy') {
+        diffBadgeGradient.addColorStop(0, '#32CD32');
+        diffBadgeGradient.addColorStop(1, '#228B22');
+      } else if (difficulty === 'medium') {
+        diffBadgeGradient.addColorStop(0, '#FFA500');
+        diffBadgeGradient.addColorStop(1, '#FF8C00');
+      } else {
+        diffBadgeGradient.addColorStop(0, '#FF4500');
+        diffBadgeGradient.addColorStop(1, '#DC143C');
+      }
+      
+      ctx.fillStyle = diffBadgeGradient;
+      ctx.beginPath();
+      ctx.arc(diffX + 15, scoreY - 5, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(difficulty.toUpperCase(), diffX + 15, scoreY - 1);
+      
+      // Level Display with Progress Bar
+      const blobLevel = Math.floor(score / 1000) + 1;
+      const levelProgress = (score % 1000) / 1000;
+      const levelX = 15;
+      const levelY = 70;
+      
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 16px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(`LEVEL ${blobLevel}`, levelX, levelY);
+      
+      // Progress bar
+      const barWidth = 150;
+      const barHeight = 8;
+      const barX = levelX;
+      const barY = levelY + 5;
+      
+      // Background
+      ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+      ctx.fillRect(barX, barY, barWidth, barHeight);
+      
+      // Progress fill with gradient
+      const progressGradient = ctx.createLinearGradient(barX, barY, barX + barWidth, barY);
+      progressGradient.addColorStop(0, '#00FF00');
+      progressGradient.addColorStop(0.5, '#FFFF00');
+      progressGradient.addColorStop(1, '#FF4500');
+      ctx.fillStyle = progressGradient;
+      ctx.fillRect(barX, barY, barWidth * levelProgress, barHeight);
+      
+      // Border
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, barY, barWidth, barHeight);
+      
+      // Bombs Display with Graphics
+      const bombX = 15;
+      const bombY = 100;
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText('BOMBS:', bombX, bombY);
+      
+      for (let i = 0; i < Math.min(bombCount, 10); i++) {
+        const bx = bombX + 60 + i * 20;
+        const by = bombY - 10;
+        
+        // Bomb icon with glow effect
+        const bombGlow = Math.sin(Date.now() / 200 + i) * 0.2 + 0.8;
+        ctx.shadowColor = '#FF4500';
+        ctx.shadowBlur = 5 * bombGlow;
+        
+        const bombGradient = ctx.createRadialGradient(bx, by, 0, bx, by, 8);
+        bombGradient.addColorStop(0, '#FF6B6B');
+        bombGradient.addColorStop(1, '#8B0000');
+        ctx.fillStyle = bombGradient;
+        ctx.beginPath();
+        ctx.arc(bx, by, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Fuse
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(bx - 4, by - 4);
+        ctx.lineTo(bx - 8, by - 8);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      
+      // Shield Display with Animated Bar
+      if (playerShield > 0) {
+        const shieldX = 15;
+        const shieldY = 125;
+        
+        ctx.fillStyle = '#00FFFF';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText('SHIELD:', shieldX, shieldY);
+        
+        // Shield bar
+        const shieldBarWidth = 100;
+        const shieldBarHeight = 10;
+        const shieldBarX = shieldX + 60;
+        const shieldBarY = shieldY - 8;
+        const shieldPercent = Math.min(playerShield / 50, 1);
+        
+        // Background
+        ctx.fillStyle = 'rgba(50, 50, 50, 0.8)';
+        ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
+        
+        // Shield fill with pulsing effect
+        const shieldPulse = Math.sin(Date.now() / 300) * 0.3 + 0.7;
+        const shieldGradient = ctx.createLinearGradient(shieldBarX, shieldBarY, shieldBarX + shieldBarWidth, shieldBarY);
+        shieldGradient.addColorStop(0, `rgba(0, 255, 255, ${shieldPulse})`);
+        shieldGradient.addColorStop(1, `rgba(0, 150, 255, ${shieldPulse})`);
+        ctx.fillStyle = shieldGradient;
+        ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth * shieldPercent, shieldBarHeight);
+        
+        // Border and glow
+        ctx.shadowColor = '#00FFFF';
+        ctx.shadowBlur = 3;
+        ctx.strokeStyle = '#00FFFF';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
+        ctx.shadowBlur = 0;
+        
+        // Shield value
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(playerShield, shieldBarX + shieldBarWidth + 15, shieldY - 2);
+      }
+      
+      // Power-up Icons - Enhanced with Animations
+      let powerUpX = 300;
+      let powerUpY = 40;
+      const iconSize = 35;
+      const spacing = 45;
       
       if (hasRapidPowerUp) {
-        // Draw rapid fire icon (lightning bolt)
-        ctx.fillStyle = '#1E90FF';
-        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath();
-        ctx.moveTo(xOffset + 7, yOffset - 12);
-        ctx.lineTo(xOffset + 4, yOffset - 6);
-        ctx.lineTo(xOffset + 10, yOffset - 6);
-        ctx.lineTo(xOffset + 7, yOffset - 1);
-        ctx.lineTo(xOffset + 17, yOffset - 9);
-        ctx.lineTo(xOffset + 11, yOffset - 9);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(1 + permanentRapidLevel, xOffset + 12, yOffset + 15);
-        xOffset += 35;
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#1E90FF', '⚡', 1 + permanentRapidLevel, 10);
+        powerUpX += spacing;
       }
       
       if (hasSprayPowerUp) {
-        // Draw spray icon (multiple bullets)
-        ctx.fillStyle = '#FFA500';
-        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
-        ctx.fillStyle = '#FFD700';
-        for (let i = 0; i < 3; i++) {
-          ctx.beginPath();
-          ctx.arc(xOffset + 6 + i * 4, yOffset - 6, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(1 + permanentSprayLevel, xOffset + 12, yOffset + 15);
-        xOffset += 35;
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FFA500', '💥', 1 + permanentSprayLevel, 10);
+        powerUpX += spacing;
       }
       
       if (hasBulletPowerUp) {
-        // Draw bullet power icon (explosive bullet)
-        ctx.fillStyle = '#32CD32';
-        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath();
-        ctx.arc(xOffset + 12, yOffset - 6, 4, 0, Math.PI * 2);
-        ctx.fill();
-        // Add explosion lines
-        ctx.strokeStyle = '#FF4500';
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 8; i++) {
-          const angle = (i / 8) * Math.PI * 2;
-          ctx.beginPath();
-          ctx.moveTo(xOffset + 12 + Math.cos(angle) * 3, yOffset - 6 + Math.sin(angle) * 3);
-          ctx.lineTo(xOffset + 12 + Math.cos(angle) * 6, yOffset - 6 + Math.sin(angle) * 6);
-          ctx.stroke();
-        }
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(1 + permanentBulletLevel, xOffset + 12, yOffset + 15);
-        xOffset += 35;
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#32CD32', '🔥', 1 + permanentBulletLevel, 2);
+        powerUpX += spacing;
       }
       
       if (hasShieldPowerUp) {
-        // Draw shield icon
-        ctx.fillStyle = '#9932CC';
-        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath();
-        ctx.moveTo(xOffset + 12, yOffset - 12);
-        ctx.lineTo(xOffset + 4, yOffset - 8);
-        ctx.lineTo(xOffset + 4, yOffset - 2);
-        ctx.lineTo(xOffset + 12, yOffset + 2);
-        ctx.lineTo(xOffset + 20, yOffset - 2);
-        ctx.lineTo(xOffset + 20, yOffset - 8);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(1 + permanentShieldLevel, xOffset + 12, yOffset + 15);
-        xOffset += 35;
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#9932CC', '🛡️', 1 + permanentShieldLevel, 5);
+        powerUpX += spacing;
       }
       
       if (hasSpeedPowerUp) {
-        // Draw speed icon (wings)
-        ctx.fillStyle = '#FF69B4';
-        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath();
-        ctx.moveTo(xOffset + 4, yOffset - 6);
-        ctx.lineTo(xOffset + 12, yOffset - 12);
-        ctx.lineTo(xOffset + 12, yOffset - 3);
-        ctx.lineTo(xOffset + 20, yOffset - 6);
-        ctx.lineTo(xOffset + 12, yOffset + 1);
-        ctx.lineTo(xOffset + 12, yOffset - 6);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(1 + permanentSpeedLevel, xOffset + 12, yOffset + 15);
-        xOffset += 35;
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FF69B4', '🚀', 1 + permanentSpeedLevel, 5);
+        powerUpX += spacing;
       }
       
       if (hasMultiPowerUp) {
-        // Draw multi-shot icon (arrows)
-        ctx.fillStyle = '#DC143C';
-        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
-        ctx.fillStyle = '#FFD700';
-        for (let i = 0; i < 3; i++) {
-          ctx.beginPath();
-          ctx.moveTo(xOffset + 5 + i * 4, yOffset - 10);
-          ctx.lineTo(xOffset + 8 + i * 4, yOffset - 12);
-          ctx.lineTo(xOffset + 8 + i * 4, yOffset - 2);
-          ctx.closePath();
-          ctx.fill();
-        }
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(1 + permanentMultiLevel, xOffset + 12, yOffset + 15);
-        xOffset += 35;
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#DC143C', '🎯', 1 + permanentMultiLevel, 3);
+        powerUpX += spacing;
       }
       
-      const blobLevel = Math.floor(score / 1000) + 1;
-      ctx.fillStyle = 'white';
-      ctx.fillText('Level: ' + blobLevel, 10, yOffset + 50);
-      ctx.fillText('Bombs: ' + bombCount, 10, yOffset + 80);
-      if (playerShield > 0) {
-        ctx.fillStyle = 'cyan';
-        ctx.fillText('Shield: ' + playerShield, 10, yOffset + 110);
+      // Helper function for animated power-up icons
+      function drawPowerUpIcon(x, y, size, color, emoji, level, maxLevel) {
+        const pulse = Math.sin(Date.now() / 400) * 0.1 + 0.9;
+        const currentSize = size * pulse;
+        
+        // Background circle with gradient
+        const iconGradient = ctx.createRadialGradient(x, y, 0, x, y, currentSize/2);
+        iconGradient.addColorStop(0, color);
+        iconGradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+        
+        ctx.fillStyle = iconGradient;
+        ctx.beginPath();
+        ctx.arc(x, y, currentSize/2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Border with glow
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        
+        // Icon text/emoji
+        ctx.fillStyle = 'white';
+        ctx.font = `${currentSize * 0.4}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText(emoji, x, y + currentSize * 0.1);
+        
+        // Level indicator
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText(level, x, y + currentSize/2 + 15);
+        
+        // Level progress dots
+        for (let i = 0; i < maxLevel; i++) {
+          const dotX = x - (maxLevel * 3) + i * 6;
+          const dotY = y + currentSize/2 + 25;
+          ctx.fillStyle = i < level ? '#FFD700' : 'rgba(255, 215, 0, 0.3)';
+          ctx.beginPath();
+          ctx.arc(dotX, dotY, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
+      
+      ctx.restore();
 
       if (bombFlashTimer > 0) {
         ctx.fillStyle = "rgba(255,255,255,0.5)";
