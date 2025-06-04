@@ -334,7 +334,7 @@
       boss = null;
       bossDefeatedThisLevel = true; // Reset boss defeat status for new level
       
-      // Retain level 2 of maxed out power-ups, reset others
+      // Identify maxed out power-ups
       const maxedRapid = permanentRapidLevel >= 10;
       const maxedSpray = permanentSprayLevel >= 10;
       const maxedBullet = permanentBulletLevel >= 2;
@@ -342,13 +342,64 @@
       const maxedSpeed = permanentSpeedLevel >= 5;
       const maxedMulti = permanentMultiLevel >= 3;
       
-      // Reset power-ups but keep level 2 for maxed ones
-      permanentRapidLevel = maxedRapid ? 2 : 0;
-      permanentSprayLevel = maxedSpray ? 2 : 0;
-      permanentBulletLevel = maxedBullet ? 1 : 0; // Bullet max is 2, so keep 1
-      permanentShieldLevel = maxedShield ? 2 : 0;
-      permanentSpeedLevel = maxedSpeed ? 2 : 0;
-      permanentMultiLevel = maxedMulti ? 1 : 0; // Multi max is 3, so keep 1
+      // Collect all power-ups that the player currently has (not maxed)
+      const currentPowerUps = [];
+      if (hasRapidPowerUp && !maxedRapid) currentPowerUps.push('rapid');
+      if (hasSprayPowerUp && !maxedSpray) currentPowerUps.push('spray');
+      if (hasBulletPowerUp && !maxedBullet) currentPowerUps.push('bullet');
+      if (hasShieldPowerUp && !maxedShield) currentPowerUps.push('shield');
+      if (hasSpeedPowerUp && !maxedSpeed) currentPowerUps.push('speed');
+      if (hasMultiPowerUp && !maxedMulti) currentPowerUps.push('multi');
+      
+      // Randomly select 2 power-ups to retain at level 2
+      const retainedPowerUps = [];
+      if (currentPowerUps.length > 0) {
+        // Shuffle and take up to 2
+        const shuffled = [...currentPowerUps].sort(() => Math.random() - 0.5);
+        retainedPowerUps.push(...shuffled.slice(0, Math.min(2, shuffled.length)));
+      }
+      
+      // Reset all power-ups to default
+      permanentRapidLevel = 0;
+      permanentSprayLevel = 0;
+      permanentBulletLevel = 0;
+      permanentShieldLevel = 0;
+      permanentSpeedLevel = 0;
+      permanentMultiLevel = 0;
+      
+      // Set maxed power-ups to level 2
+      if (maxedRapid) permanentRapidLevel = 2;
+      if (maxedSpray) permanentSprayLevel = 2;
+      if (maxedBullet) permanentBulletLevel = 1; // Bullet max is 2, so keep 1
+      if (maxedShield) permanentShieldLevel = 2;
+      if (maxedSpeed) permanentSpeedLevel = 2;
+      if (maxedMulti) permanentMultiLevel = 1; // Multi max is 3, so keep 1
+      
+      // Set randomly retained power-ups to level 2
+      retainedPowerUps.forEach(powerUp => {
+        switch(powerUp) {
+          case 'rapid': permanentRapidLevel = 2; break;
+          case 'spray': permanentSprayLevel = 2; break;
+          case 'bullet': permanentBulletLevel = 1; break; // Bullet max is 2, so keep 1
+          case 'shield': permanentShieldLevel = 2; break;
+          case 'speed': permanentSpeedLevel = 2; break;
+          case 'multi': permanentMultiLevel = 1; break; // Multi max is 3, so keep 1
+        }
+      });
+      
+      // Set remaining non-maxed, non-retained power-ups to level 1 if they were active
+      currentPowerUps.forEach(powerUp => {
+        if (!retainedPowerUps.includes(powerUp)) {
+          switch(powerUp) {
+            case 'rapid': if (permanentRapidLevel === 0) permanentRapidLevel = 1; break;
+            case 'spray': if (permanentSprayLevel === 0) permanentSprayLevel = 1; break;
+            case 'bullet': if (permanentBulletLevel === 0) permanentBulletLevel = 1; break;
+            case 'shield': if (permanentShieldLevel === 0) permanentShieldLevel = 1; break;
+            case 'speed': if (permanentSpeedLevel === 0) permanentSpeedLevel = 1; break;
+            case 'multi': if (permanentMultiLevel === 0) permanentMultiLevel = 1; break;
+          }
+        }
+      });
       
       // Update power-up flags based on retained levels
       hasRapidPowerUp = permanentRapidLevel > 0;
