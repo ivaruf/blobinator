@@ -479,7 +479,7 @@
 
       blobs.forEach(blob => {
         if (blob.isSpinner) {
-          // Draw spinning pulsating enemy
+          // Draw spinning pulsating enemy with enhanced textures
           ctx.save();
           ctx.translate(blob.x, blob.y);
           ctx.rotate(blob.rotation);
@@ -487,8 +487,14 @@
           // Pulsating effect
           const pulsateSize = Math.sin(blob.pulsatePhase) * 5 + blob.radius;
           
+          // Create gradient for main body
+          const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, pulsateSize);
+          gradient.addColorStop(0, '#FF00FF');
+          gradient.addColorStop(0.5, '#8B00FF');
+          gradient.addColorStop(1, '#4B0082');
+          
           // Draw spinning shape with multiple segments
-          ctx.fillStyle = blob.color;
+          ctx.fillStyle = gradient;
           ctx.beginPath();
           for (let i = 0; i < 8; i++) {
             const angle = (i / 8) * Math.PI * 2;
@@ -504,12 +510,26 @@
           ctx.closePath();
           ctx.fill();
           
-          // Add glowing effect
-          ctx.shadowColor = blob.color;
-          ctx.shadowBlur = 10;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+          // Add textured segments
+          ctx.strokeStyle = '#FFD700';
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(angle) * pulsateSize, Math.sin(angle) * pulsateSize);
+            ctx.stroke();
+          }
+          
+          // Add glowing core
+          ctx.shadowColor = '#FF00FF';
+          ctx.shadowBlur = 15;
+          const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, pulsateSize * 0.4);
+          coreGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+          coreGradient.addColorStop(1, 'rgba(255, 0, 255, 0.3)');
+          ctx.fillStyle = coreGradient;
           ctx.beginPath();
-          ctx.arc(0, 0, pulsateSize * 0.5, 0, Math.PI * 2);
+          ctx.arc(0, 0, pulsateSize * 0.4, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           
@@ -523,11 +543,81 @@
           ctx.lineWidth = 4;
           ctx.stroke();
         } else {
-          // Draw regular blob
-          ctx.fillStyle = blob.color;
+          // Draw regular blob with texture patterns
+          ctx.save();
+          
+          // Create radial gradient for main body
+          const gradient = ctx.createRadialGradient(
+            blob.x - blob.radius * 0.3, blob.y - blob.radius * 0.3, 0,
+            blob.x, blob.y, blob.radius
+          );
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+          gradient.addColorStop(0.3, blob.color);
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+          
+          // Draw main blob body
+          ctx.fillStyle = gradient;
           ctx.beginPath();
           ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
           ctx.fill();
+          
+          // Add texture patterns based on health
+          if (blob.health >= 3) {
+            // High health: spiky pattern
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 12; i++) {
+              const angle = (i / 12) * Math.PI * 2;
+              const innerRadius = blob.radius * 0.6;
+              const outerRadius = blob.radius * 0.9;
+              ctx.beginPath();
+              ctx.moveTo(
+                blob.x + Math.cos(angle) * innerRadius,
+                blob.y + Math.sin(angle) * innerRadius
+              );
+              ctx.lineTo(
+                blob.x + Math.cos(angle) * outerRadius,
+                blob.y + Math.sin(angle) * outerRadius
+              );
+              ctx.stroke();
+            }
+          } else if (blob.health === 2) {
+            // Medium health: dotted pattern
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            for (let i = 0; i < 8; i++) {
+              const angle = (i / 8) * Math.PI * 2;
+              const dotRadius = 2;
+              const distance = blob.radius * 0.7;
+              ctx.beginPath();
+              ctx.arc(
+                blob.x + Math.cos(angle) * distance,
+                blob.y + Math.sin(angle) * distance,
+                dotRadius, 0, Math.PI * 2
+              );
+              ctx.fill();
+            }
+          } else {
+            // Low health: simple ring pattern
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(blob.x, blob.y, blob.radius * 0.7, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          
+          // Add subtle outer glow
+          ctx.shadowColor = blob.color;
+          ctx.shadowBlur = 5;
+          ctx.strokeStyle = blob.color;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(blob.x, blob.y, blob.radius + 1, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          
+          ctx.restore();
+          
+          // Health bar for regular blob
           let healthFraction = blob.health / blob.maxHealth;
           ctx.beginPath();
           ctx.arc(blob.x, blob.y, blob.radius + 5, -Math.PI / 2, -Math.PI / 2 + healthFraction * 2 * Math.PI);
