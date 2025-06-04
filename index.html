@@ -67,7 +67,7 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
-
+    
     // Initial resize and add event listener for window resize
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -102,15 +102,6 @@
     let playerShield = 0;
     let playerSpeed = 1;
 
-    // Combo system variables
-    let killStreak = 0;
-    let scoreMultiplier = 1;
-    let lastKillTime = 0;
-
-    // Evolution points
-    let evolutionPoints = 0;
-    let shipTier = 0;
-
     // Player setup.
     const player = {
       x: canvas.width / 2 - 25,
@@ -144,10 +135,10 @@
         const offsetX = (Math.random() - 0.5) * spread;
         const offsetY = (Math.random() - 0.5) * spread;
         const health = Math.floor(Math.random() * 3) + 1;
-
+        
         // 20% chance to spawn a spinning pulsating enemy
         const isSpinner = Math.random() < 0.2;
-
+        
         let blob = {
           x: clusterCenterX + offsetX,
           y: -20 + offsetY,
@@ -253,18 +244,6 @@
       return 1 + (blobLevel - 1) * 0.1;
     }
 
-    function getUpgradeCost(type) {
-      switch (type) {
-        case "rapid": return (permanentRapidLevel + 1) * 5;
-        case "spray": return (permanentSprayLevel + 1) * 5;
-        case "bullet": return (permanentBulletLevel + 1) * 10;
-        case "shield": return (permanentShieldLevel + 1) * 8;
-        case "speed": return (permanentSpeedLevel + 1) * 7;
-        case "multi": return (permanentMultiLevel + 1) * 12;
-        default: return 9999; // Should never happen
-      }
-    }
-
     // Reset game state.
     function resetGame() {
       score = 0;
@@ -291,22 +270,8 @@
       hasMultiPowerUp = false;
       playerShield = 0;
       playerSpeed = 1;
-
-      killStreak = 0;
-      scoreMultiplier = 1;
-      lastKillTime = 0;
-
-      evolutionPoints = 0;
-      shipTier = 0;
       spawnBoxes();
       startTime = Date.now();
-    }
-
-    function getShipColor() {
-      if (shipTier === 1) return '#77DD77'; // Pastel green
-      else if (shipTier === 2) return '#87CEEB'; // Sky Blue
-      else if (shipTier === 3) return '#DA70D6'; // Orchid
-      else return 'white';
     }
 
     // Input support.
@@ -337,26 +302,7 @@
           for (let i = blobs.length - 1; i >= 0; i--) {
             blobs[i].health -= 100;
             if (blobs[i].health <= 0) {
-              // Combo system
-              const currentTime = Date.now();
-              if (currentTime - lastKillTime < 1000) {
-                killStreak++;
-                scoreMultiplier = Math.min(1 + killStreak * 0.1, 3);
-              } else {
-                killStreak = 0;
-                scoreMultiplier = 1;
-              }
-              lastKillTime = currentTime;
-
-              let basePoints = 10;
-              if (blobs[i].isArmored) basePoints = 25;
-              else if (blobs[i].isFast) basePoints = 15;
-              else if (blobs[i].isSpinner) basePoints = 20;
-
-              let earnedScore = Math.floor(basePoints * scoreMultiplier);
-              score += earnedScore;
-              evolutionPoints += Math.floor(earnedScore / 10);
-
+              score += 10;
               blobs.splice(i, 1);
             }
           }
@@ -388,26 +334,7 @@
           for (let i = blobs.length - 1; i >= 0; i--) {
             blobs[i].health -= 100;
             if (blobs[i].health <= 0) {
-              // Combo system
-              const currentTime = Date.now();
-              if (currentTime - lastKillTime < 1000) {
-                killStreak++;
-                scoreMultiplier = Math.min(1 + killStreak * 0.1, 3);
-              } else {
-                killStreak = 0;
-                scoreMultiplier = 1;
-              }
-              lastKillTime = currentTime;
-
-              let basePoints = 10;
-              if (blobs[i].isArmored) basePoints = 25;
-              else if (blobs[i].isFast) basePoints = 15;
-              else if (blobs[i].isSpinner) basePoints = 20;
-
-              let earnedScore = Math.floor(basePoints * scoreMultiplier);
-              score += earnedScore;
-              evolutionPoints += Math.floor(earnedScore / 10);
-
+              score += 10;
               blobs.splice(i, 1);
             }
           }
@@ -428,7 +355,7 @@
         const bulletSpeed = 7;
         const bulletDamage = 1 + permanentBulletLevel;
         const bulletColor = permanentBulletLevel > 0 ? "cyan" : "yellow";
-
+        
         // Multi-shot fires multiple waves
         let waveCount = 1 + permanentMultiLevel;
         for (let wave = 0; wave < waveCount; wave++) {
@@ -585,13 +512,13 @@
       let speedMult = getBlobSpeedMultiplier();
       for (let i = blobs.length - 1; i >= 0; i--) {
         blobs[i].y += blobs[i].speed * speedMult;
-
+        
         // Update spinner properties
         if (blobs[i].isSpinner) {
           blobs[i].rotation += 0.1;
           blobs[i].pulsatePhase += 0.15;
         }
-
+        
         if (blobs[i].y + blobs[i].radius >= player.y) {
           if (playerShield > 0) {
             playerShield--;
@@ -654,26 +581,7 @@
             blobs[i].health -= bullets[j].damage;
             bullets.splice(j, 1);
             if (blobs[i].health <= 0) {
-              // Combo system
-              const currentTime = Date.now();
-              if (currentTime - lastKillTime < 1000) {
-                killStreak++;
-                scoreMultiplier = Math.min(1 + killStreak * 0.1, 3);
-              } else {
-                killStreak = 0;
-                scoreMultiplier = 1;
-              }
-              lastKillTime = currentTime;
-
-              let basePoints = 10;
-              if (blobs[i].isArmored) basePoints = 25;
-              else if (blobs[i].isFast) basePoints = 15;
-              else if (blobs[i].isSpinner) basePoints = 20;
-
-              let earnedScore = Math.floor(basePoints * scoreMultiplier);
-              score += earnedScore;
-              evolutionPoints += Math.floor(earnedScore / 10);
-
+              score += 10;
               blobs.splice(i, 1);
             }
             break;
@@ -688,18 +596,18 @@
 
       // Draw enhanced player ship with cool texture
       ctx.save();
-
+      
       // Main ship body with gradient
       const shipGradient = ctx.createLinearGradient(player.x, player.y, player.x, player.y + player.height);
       shipGradient.addColorStop(0, '#E0E0E0');
       shipGradient.addColorStop(0.3, '#FFFFFF');
       shipGradient.addColorStop(0.7, '#C0C0C0');
       shipGradient.addColorStop(1, '#808080');
-
+      
       // Ship body
       ctx.fillStyle = shipGradient;
       ctx.fillRect(player.x, player.y, player.width, player.height);
-
+      
       // Ship nose (triangular front)
       ctx.fillStyle = '#FFD700';
       ctx.beginPath();
@@ -708,21 +616,21 @@
       ctx.lineTo(player.x + player.width * 0.7, player.y + 5);
       ctx.closePath();
       ctx.fill();
-
+      
       // Engine exhausts
       ctx.fillStyle = '#FF4500';
       ctx.fillRect(player.x + 5, player.y + player.height, 8, 6);
       ctx.fillRect(player.x + player.width - 13, player.y + player.height, 8, 6);
-
+      
       // Wing details
       ctx.fillStyle = '#4169E1';
       ctx.fillRect(player.x - 3, player.y + 8, 6, 8);
       ctx.fillRect(player.x + player.width - 3, player.y + 8, 6, 8);
-
+      
       // Cockpit
       ctx.fillStyle = '#00CED1';
       ctx.fillRect(player.x + player.width/2 - 8, player.y + 3, 16, 8);
-
+      
       // Shield visual effect
       if (playerShield > 0) {
         ctx.strokeStyle = `rgba(0, 255, 255, ${Math.min(playerShield / 20, 1)})`;
@@ -731,24 +639,24 @@
         ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width/2 + 5, 0, Math.PI * 2);
         ctx.stroke();
       }
-
+      
       ctx.restore();
 
       bullets.forEach(bullet => {
         ctx.save();
-
+        
         // Create bullet gradient
         const bulletGradient = ctx.createRadialGradient(
           bullet.x - 2, bullet.y - 2, 0,
           bullet.x, bullet.y, bullet.radius
         );
-
+        
         if (bullet.color === 'cyan') {
           // Enhanced bullet
           bulletGradient.addColorStop(0, '#FFFFFF');
           bulletGradient.addColorStop(0.3, '#00FFFF');
           bulletGradient.addColorStop(1, '#0080FF');
-
+          
           // Add glow effect
           ctx.shadowColor = '#00FFFF';
           ctx.shadowBlur = 8;
@@ -757,23 +665,23 @@
           bulletGradient.addColorStop(0, '#FFFF00');
           bulletGradient.addColorStop(0.5, '#FFD700');
           bulletGradient.addColorStop(1, '#FFA500');
-
+          
           ctx.shadowColor = '#FFFF00';
           ctx.shadowBlur = 4;
         }
-
+        
         ctx.fillStyle = bulletGradient;
         ctx.beginPath();
         ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
         ctx.fill();
-
+        
         // Add bullet trail effect
         ctx.shadowBlur = 0;
         ctx.fillStyle = `rgba(255, 255, 255, 0.6)`;
         ctx.beginPath();
         ctx.arc(bullet.x, bullet.y, bullet.radius * 0.4, 0, Math.PI * 2);
         ctx.fill();
-
+        
         ctx.restore();
       });
 
@@ -783,16 +691,16 @@
           ctx.save();
           ctx.translate(blob.x, blob.y);
           ctx.rotate(blob.rotation);
-
+          
           // Pulsating effect
           const pulsateSize = Math.sin(blob.pulsatePhase) * 5 + blob.radius;
-
+          
           // Create gradient for main body
           const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, pulsateSize);
           gradient.addColorStop(0, '#FF00FF');
           gradient.addColorStop(0.5, '#8B00FF');
           gradient.addColorStop(1, '#4B0082');
-
+          
           // Draw spinning shape with multiple segments
           ctx.fillStyle = gradient;
           ctx.beginPath();
@@ -802,14 +710,14 @@
             const y1 = Math.sin(angle) * pulsateSize;
             const x2 = Math.cos(angle + Math.PI / 8) * (pulsateSize * 0.7);
             const y2 = Math.sin(angle + Math.PI / 8) * (pulsateSize * 0.7);
-
+            
             if (i === 0) ctx.moveTo(x1, y1);
             else ctx.lineTo(x1, y1);
             ctx.lineTo(x2, y2);
           }
           ctx.closePath();
           ctx.fill();
-
+          
           // Add textured segments
           ctx.strokeStyle = '#FFD700';
           ctx.lineWidth = 2;
@@ -820,7 +728,7 @@
             ctx.lineTo(Math.cos(angle) * pulsateSize, Math.sin(angle) * pulsateSize);
             ctx.stroke();
           }
-
+          
           // Add glowing core
           ctx.shadowColor = '#FF00FF';
           ctx.shadowBlur = 15;
@@ -832,9 +740,9 @@
           ctx.arc(0, 0, pulsateSize * 0.4, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
-
+          
           ctx.restore();
-
+          
           // Health bar for spinner
           let healthFraction = blob.health / blob.maxHealth;
           ctx.beginPath();
@@ -845,7 +753,7 @@
         } else {
           // Draw regular blob with texture patterns
           ctx.save();
-
+          
           // Create radial gradient for main body
           const gradient = ctx.createRadialGradient(
             blob.x - blob.radius * 0.3, blob.y - blob.radius * 0.3, 0,
@@ -854,13 +762,13 @@
           gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
           gradient.addColorStop(0.3, blob.color);
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-
+          
           // Draw main blob body
           ctx.fillStyle = gradient;
           ctx.beginPath();
           ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
           ctx.fill();
-
+          
           // Add texture patterns based on health
           if (blob.health >= 3) {
             // High health: spiky pattern
@@ -904,7 +812,7 @@
             ctx.arc(blob.x, blob.y, blob.radius * 0.7, 0, Math.PI * 2);
             ctx.stroke();
           }
-
+          
           // Add subtle outer glow
           ctx.shadowColor = blob.color;
           ctx.shadowBlur = 5;
@@ -914,9 +822,9 @@
           ctx.arc(blob.x, blob.y, blob.radius + 1, 0, Math.PI * 2);
           ctx.stroke();
           ctx.shadowBlur = 0;
-
+          
           ctx.restore();
-
+          
           // Health bar for regular blob
           let healthFraction = blob.health / blob.maxHealth;
           ctx.beginPath();
@@ -929,7 +837,7 @@
 
       if (boss) {
         ctx.save();
-
+        
         // Boss main body with complex gradient
         const bossGradient = ctx.createRadialGradient(
           boss.x - boss.radius * 0.3, boss.y - boss.radius * 0.3, 0,
@@ -939,17 +847,17 @@
         bossGradient.addColorStop(0.3, '#FF0000');
         bossGradient.addColorStop(0.6, '#8B0000');
         bossGradient.addColorStop(1, '#4B0000');
-
+        
         // Pulsating effect
         const pulsate = Math.sin(Date.now() / 200) * 5;
         const currentRadius = boss.radius + pulsate;
-
+        
         // Main boss body
         ctx.fillStyle = bossGradient;
         ctx.beginPath();
         ctx.arc(boss.x, boss.y, currentRadius, 0, Math.PI * 2);
         ctx.fill();
-
+        
         // Boss armor segments
         ctx.strokeStyle = '#FFD700';
         ctx.lineWidth = 3;
@@ -968,7 +876,7 @@
           );
           ctx.stroke();
         }
-
+        
         // Boss core
         const coreGradient = ctx.createRadialGradient(boss.x, boss.y, 0, boss.x, boss.y, currentRadius * 0.4);
         coreGradient.addColorStop(0, '#FFFFFF');
@@ -978,22 +886,22 @@
         ctx.beginPath();
         ctx.arc(boss.x, boss.y, currentRadius * 0.4, 0, Math.PI * 2);
         ctx.fill();
-
+        
         // Menacing eyes
         ctx.fillStyle = '#FF0000';
         ctx.beginPath();
         ctx.arc(boss.x - 20, boss.y - 15, 8, 0, Math.PI * 2);
         ctx.arc(boss.x + 20, boss.y - 15, 8, 0, Math.PI * 2);
         ctx.fill();
-
+        
         ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
         ctx.arc(boss.x - 18, boss.y - 17, 3, 0, Math.PI * 2);
         ctx.arc(boss.x + 22, boss.y - 17, 3, 0, Math.PI * 2);
         ctx.fill();
-
+        
         ctx.restore();
-
+        
         // Health bar
         let bossHealthFraction = boss.health / boss.maxHealth;
         ctx.beginPath();
@@ -1001,7 +909,7 @@
         ctx.strokeStyle = bossHealthFraction > 0.5 ? "#00FF00" : bossHealthFraction > 0.25 ? "#FFFF00" : "#FF0000";
         ctx.lineWidth = 6;
         ctx.stroke();
-
+        
         // Health text with better styling
         ctx.fillStyle = 'white';
         ctx.font = 'bold 18px Arial';
@@ -1036,38 +944,38 @@
 
       // Enhanced HUD with graphics and animations
       ctx.save();
-
+      
       // HUD Background Panel
       const hudWidth = 280;
       const hudHeight = 140;
       const hudGradient = ctx.createLinearGradient(0, 0, hudWidth, hudHeight);
       hudGradient.addColorStop(0, 'rgba(0, 20, 40, 0.9)');
       hudGradient.addColorStop(1, 'rgba(0, 10, 20, 0.9)');
-
+      
       ctx.fillStyle = hudGradient;
       ctx.fillRect(5, 5, hudWidth, hudHeight);
       ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
       ctx.lineWidth = 2;
       ctx.strokeRect(5, 5, hudWidth, hudHeight);
-
+      
       // Animated Score Display
       const scoreX = 15;
       const scoreY = 30;
       const scoreGlow = Math.sin(Date.now() / 300) * 0.3 + 0.7;
-
+      
       ctx.shadowColor = '#00FFFF';
       ctx.shadowBlur = 10 * scoreGlow;
       ctx.fillStyle = `rgba(255, 255, 255, ${scoreGlow})`;
       ctx.font = 'bold 24px Arial';
       ctx.textAlign = 'left';
       ctx.fillText('SCORE', scoreX, scoreY);
-
+      
       ctx.shadowBlur = 5;
       ctx.fillStyle = '#FFD700';
       ctx.font = 'bold 20px Arial';
       ctx.fillText(score.toLocaleString(), scoreX, scoreY + 25);
       ctx.shadowBlur = 0;
-
+      
       // Difficulty Badge
       const diffX = scoreX + 120;
       const diffBadgeGradient = ctx.createRadialGradient(diffX + 15, scoreY - 5, 0, diffX + 15, scoreY - 5, 20);
@@ -1081,7 +989,7 @@
         diffBadgeGradient.addColorStop(0, '#FF4500');
         diffBadgeGradient.addColorStop(1, '#DC143C');
       }
-
+      
       ctx.fillStyle = diffBadgeGradient;
       ctx.beginPath();
       ctx.arc(diffX + 15, scoreY - 5, 18, 0, Math.PI * 2);
@@ -1089,33 +997,33 @@
       ctx.strokeStyle = 'white';
       ctx.lineWidth = 2;
       ctx.stroke();
-
+      
       ctx.fillStyle = 'white';
       ctx.font = 'bold 12px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(difficulty.toUpperCase(), diffX + 15, scoreY - 1);
-
+      
       // Level Display with Progress Bar
       const blobLevel = Math.floor(score / 1000) + 1;
       const levelProgress = (score % 1000) / 1000;
       const levelX = 15;
       const levelY = 70;
-
+      
       ctx.fillStyle = 'white';
       ctx.font = 'bold 16px Arial';
       ctx.textAlign = 'left';
       ctx.fillText(`LEVEL ${blobLevel}`, levelX, levelY);
-
+      
       // Progress bar
       const barWidth = 150;
       const barHeight = 8;
       const barX = levelX;
       const barY = levelY + 5;
-
+      
       // Background
       ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
       ctx.fillRect(barX, barY, barWidth, barHeight);
-
+      
       // Progress fill with gradient
       const progressGradient = ctx.createLinearGradient(barX, barY, barX + barWidth, barY);
       progressGradient.addColorStop(0, '#00FF00');
@@ -1123,28 +1031,28 @@
       progressGradient.addColorStop(1, '#FF4500');
       ctx.fillStyle = progressGradient;
       ctx.fillRect(barX, barY, barWidth * levelProgress, barHeight);
-
+      
       // Border
       ctx.strokeStyle = 'white';
       ctx.lineWidth = 1;
       ctx.strokeRect(barX, barY, barWidth, barHeight);
-
+      
       // Bombs Display with Graphics
       const bombX = 15;
       const bombY = 100;
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px Arial';
       ctx.fillText('BOMBS:', bombX, bombY);
-
+      
       for (let i = 0; i < Math.min(bombCount, 10); i++) {
         const bx = bombX + 60 + i * 20;
         const by = bombY - 10;
-
+        
         // Bomb icon with glow effect
         const bombGlow = Math.sin(Date.now() / 200 + i) * 0.2 + 0.8;
         ctx.shadowColor = '#FF4500';
         ctx.shadowBlur = 5 * bombGlow;
-
+        
         const bombGradient = ctx.createRadialGradient(bx, by, 0, bx, by, 8);
         bombGradient.addColorStop(0, '#FF6B6B');
         bombGradient.addColorStop(1, '#8B0000');
@@ -1152,7 +1060,7 @@
         ctx.beginPath();
         ctx.arc(bx, by, 6, 0, Math.PI * 2);
         ctx.fill();
-
+        
         // Fuse
         ctx.strokeStyle = '#FFD700';
         ctx.lineWidth = 2;
@@ -1162,27 +1070,27 @@
         ctx.stroke();
         ctx.shadowBlur = 0;
       }
-
+      
       // Shield Display with Animated Bar
       if (playerShield > 0) {
         const shieldX = 15;
         const shieldY = 125;
-
+        
         ctx.fillStyle = '#00FFFF';
         ctx.font = 'bold 14px Arial';
         ctx.fillText('SHIELD:', shieldX, shieldY);
-
+        
         // Shield bar
         const shieldBarWidth = 100;
         const shieldBarHeight = 10;
         const shieldBarX = shieldX + 60;
         const shieldBarY = shieldY - 8;
         const shieldPercent = Math.min(playerShield / 50, 1);
-
+        
         // Background
         ctx.fillStyle = 'rgba(50, 50, 50, 0.8)';
         ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
-
+        
         // Shield fill with pulsing effect
         const shieldPulse = Math.sin(Date.now() / 300) * 0.3 + 0.7;
         const shieldGradient = ctx.createLinearGradient(shieldBarX, shieldBarY, shieldBarX + shieldBarWidth, shieldBarY);
@@ -1190,7 +1098,7 @@
         shieldGradient.addColorStop(1, `rgba(0, 150, 255, ${shieldPulse})`);
         ctx.fillStyle = shieldGradient;
         ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth * shieldPercent, shieldBarHeight);
-
+        
         // Border and glow
         ctx.shadowColor = '#00FFFF';
         ctx.shadowBlur = 3;
@@ -1198,96 +1106,65 @@
         ctx.lineWidth = 1;
         ctx.strokeRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
         ctx.shadowBlur = 0;
-
+        
         // Shield value
         ctx.fillStyle = 'white';
         ctx.font = 'bold 12px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(playerShield, shieldBarX + shieldBarWidth + 15, shieldY - 2);
       }
-
-      // Enhanced HUD with glowing effects
-      ctx.save();
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-      ctx.shadowBlur = 3;
-
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 24px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText('Score: ' + score, 10, 30);
-
-      // Evolution points with special styling
-      ctx.fillStyle = '#FFD700';
-      ctx.fillText('Evolution: ' + evolutionPoints, 10, 60);
-
-      // Ship tier indicator
-      if (shipTier > 0) {
-        ctx.fillStyle = getShipColor();
-        ctx.fillText('Ship Tier: ' + shipTier, 10, 90);
-      }
-
-      // Combo display
-      if (killStreak > 0) {
-        ctx.fillStyle = '#FF6B6B';
-        ctx.font = 'bold 20px Arial';
-        ctx.fillText('Combo: x' + scoreMultiplier.toFixed(1) + ' (' + killStreak + ' kills)', 10, 120);
-      }
-
-      ctx.fillStyle = 'white';
-      ctx.font = '18px Arial';
-      ctx.fillText('Difficulty: ' + difficulty.charAt(0).toUpperCase() + difficulty.slice(1), 10, 150);
-
-      ctx.shadowBlur = 0;
-      ctx.restore();
-      // Power-up icons and levels with costs and enhanced visuals
-      let yOffset = 180;
-      let xOffset = 10;
-
+      
+      // Power-up Icons - Enhanced with Animations
+      let powerUpX = 300;
+      let powerUpY = 40;
+      const iconSize = 35;
+      const spacing = 45;
+      
       if (hasRapidPowerUp) {
         drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#1E90FF', '⚡', 1 + permanentRapidLevel, 10);
         powerUpX += spacing;
       }
-
+      
       if (hasSprayPowerUp) {
         drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FFA500', '💥', 1 + permanentSprayLevel, 10);
         powerUpX += spacing;
       }
-
+      
       if (hasBulletPowerUp) {
         drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#32CD32', '🔥', 1 + permanentBulletLevel, 2);
         powerUpX += spacing;
       }
-
+      
       if (hasShieldPowerUp) {
         drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#9932CC', '🛡️', 1 + permanentShieldLevel, 5);
         powerUpX += spacing;
       }
-
+      
       if (hasSpeedPowerUp) {
         drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FF69B4', '🚀', 1 + permanentSpeedLevel, 5);
         powerUpX += spacing;
       }
-
+      
       if (hasMultiPowerUp) {
         drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#DC143C', '🎯', 1 + permanentMultiLevel, 3);
         powerUpX += spacing;
       }
-
+      
       // Helper function for animated power-up icons
       function drawPowerUpIcon(x, y, size, color, emoji, level, maxLevel) {
         const pulse = Math.sin(Date.now() / 400) * 0.1 + 0.9;
         const currentSize = size * pulse;
-
+        
         // Background circle with gradient
         const iconGradient = ctx.createRadialGradient(x, y, 0, x, y, currentSize/2);
         iconGradient.addColorStop(0, color);
         iconGradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
-
+        
         ctx.fillStyle = iconGradient;
         ctx.beginPath();
         ctx.arc(x, y, currentSize/2, 0, Math.PI * 2);
         ctx.fill();
-
+        
         // Border with glow
         ctx.shadowColor = color;
         ctx.shadowBlur = 8;
@@ -1295,18 +1172,18 @@
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.shadowBlur = 0;
-
+        
         // Icon text/emoji
         ctx.fillStyle = 'white';
         ctx.font = `${currentSize * 0.4}px Arial`;
         ctx.textAlign = 'center';
         ctx.fillText(emoji, x, y + currentSize * 0.1);
-
+        
         // Level indicator
         ctx.fillStyle = '#FFD700';
         ctx.font = 'bold 12px Arial';
         ctx.fillText(level, x, y + currentSize/2 + 15);
-
+        
         // Level progress dots
         for (let i = 0; i < maxLevel; i++) {
           const dotX = x - (maxLevel * 3) + i * 6;
@@ -1317,18 +1194,7 @@
           ctx.fill();
         }
       }
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(1 + permanentRapidLevel, xOffset + 12, yOffset + 15);
-
-        // Show upgrade cost
-        const cost = getUpgradeCost("rapid");
-        ctx.fillStyle = evolutionPoints >= cost ? '#00FF00' : '#FF0000';
-        ctx.font = '10px Arial';
-        ctx.fillText(cost, xOffset + 12, yOffset + 30);
-        xOffset += 35;
-      }
-
+      
       ctx.restore();
 
       if (bombFlashTimer > 0) {
