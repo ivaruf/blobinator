@@ -292,7 +292,7 @@
     function spawnBoss() {
       let bossRadius = 80;
       const diffSettings = getDifficultySettings();
-      const baseHealth = 500 + getBlobSpeedMultiplier() * 20;
+      const baseHealth = 500 + (currentLevel - 1) * 50;
       const health = Math.floor(baseHealth * diffSettings.bossHealthMultiplier);
       boss = {
         x: Math.random() * (canvas.width - bossRadius*2) + bossRadius,
