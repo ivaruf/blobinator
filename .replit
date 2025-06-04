@@ -3,6 +3,7 @@ run = "python server.py"
 
 [nix]
 channel = "stable-24_05"
+packages = ["git-doc", "vim"]
 
 [workflows]
 runButton = "HTML Server"
