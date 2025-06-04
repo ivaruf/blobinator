@@ -88,11 +88,19 @@
     let permanentRapidLevel = 0;
     let permanentSprayLevel = 0;
     let permanentBulletLevel = 0;
+    let permanentShieldLevel = 0;
+    let permanentSpeedLevel = 0;
+    let permanentMultiLevel = 0;
     let nextBossScore = 3500;
     let difficulty = 'medium'; // easy, medium, hard
     let hasRapidPowerUp = false;
     let hasSprayPowerUp = false;
     let hasBulletPowerUp = false;
+    let hasShieldPowerUp = false;
+    let hasSpeedPowerUp = false;
+    let hasMultiPowerUp = false;
+    let playerShield = 0;
+    let playerSpeed = 1;
 
     // Player setup.
     const player = {
@@ -160,6 +168,15 @@
       } else if(type === "bullet") {
         boxColor = "#32CD32";
         doorColor = "#2E8B57";
+      } else if(type === "shield") {
+        boxColor = "#9932CC";
+        doorColor = "#8B008B";
+      } else if(type === "speed") {
+        boxColor = "#FF69B4";
+        doorColor = "#FF1493";
+      } else if(type === "multi") {
+        boxColor = "#DC143C";
+        doorColor = "#B22222";
       }
       const newBox = {
         x: Math.random() * (canvas.width - boxWidth),
@@ -178,9 +195,15 @@
     function spawnRandomBox(isInitial = false) {
       const rand = Math.random();
       let type;
-      if(rand < 0.01) {
+      if(rand < 0.005) {
         type = "bullet";
-      } else if(rand < 0.1) {
+      } else if(rand < 0.02) {
+        type = "shield";
+      } else if(rand < 0.04) {
+        type = "speed";
+      } else if(rand < 0.06) {
+        type = "multi";
+      } else if(rand < 0.15) {
         type = "spray";
       } else {
         type = "rapid";
@@ -192,6 +215,9 @@
       spawnBoxForType("rapid", true);
       spawnBoxForType("spray", true);
       spawnBoxForType("bullet", true);
+      spawnBoxForType("shield", true);
+      spawnBoxForType("speed", true);
+      spawnBoxForType("multi", true);
     }
     // Initial box spawn.
     spawnBoxes();
@@ -232,10 +258,18 @@
       permanentRapidLevel = 0;
       permanentSprayLevel = 0;
       permanentBulletLevel = 0;
+      permanentShieldLevel = 0;
+      permanentSpeedLevel = 0;
+      permanentMultiLevel = 0;
       nextBossScore = 3500;
       hasRapidPowerUp = false;
       hasSprayPowerUp = false;
       hasBulletPowerUp = false;
+      hasShieldPowerUp = false;
+      hasSpeedPowerUp = false;
+      hasMultiPowerUp = false;
+      playerShield = 0;
+      playerSpeed = 1;
       spawnBoxes();
       startTime = Date.now();
     }
@@ -245,7 +279,9 @@
       e.preventDefault();
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
-      player.x = touch.clientX - rect.left - player.width / 2;
+      const targetX = touch.clientX - rect.left - player.width / 2;
+      const speedMult = 1 + (permanentSpeedLevel * 0.5);
+      player.x += (targetX - player.x) * 0.3 * speedMult;
       if (player.x < 0) player.x = 0;
       if (player.x + player.width > canvas.width) {
         player.x = canvas.width - player.width;
@@ -282,7 +318,9 @@
 
     canvas.addEventListener('mousemove', (e) => {
       const rect = canvas.getBoundingClientRect();
-      player.x = e.clientX - rect.left - player.width / 2;
+      const targetX = e.clientX - rect.left - player.width / 2;
+      const speedMult = 1 + (permanentSpeedLevel * 0.5);
+      player.x += (targetX - player.x) * 0.5 * speedMult;
       if (player.x < 0) player.x = 0;
       if (player.x + player.width > canvas.width) {
         player.x = canvas.width - player.width;
@@ -318,7 +356,11 @@
         const bulletDamage = 1 + permanentBulletLevel;
         const bulletColor = permanentBulletLevel > 0 ? "cyan" : "yellow";
         
-        if (permanentSprayLevel > 0) {
+        // Multi-shot fires multiple waves
+        let waveCount = 1 + permanentMultiLevel;
+        for (let wave = 0; wave < waveCount; wave++) {
+          setTimeout(() => {
+            if (permanentSprayLevel > 0) {
           const numBullets = 1 + permanentSprayLevel;
           if (numBullets === 1) {
             bullets.push({
@@ -386,14 +428,16 @@
           }
         } else {
           bullets.push({
-            x: player.x + player.width / 2,
-            y: player.y,
-            radius: 5,
-            vx: 0,
-            vy: -bulletSpeed,
-            damage: bulletDamage,
-            color: bulletColor
-          });
+              x: player.x + player.width / 2,
+              y: player.y,
+              radius: 5,
+              vx: 0,
+              vy: -bulletSpeed,
+              damage: bulletDamage,
+              color: bulletColor
+            });
+          }
+          }, wave * 50);
         }
         bulletFireTimer = 0;
       }
@@ -440,6 +484,22 @@
                   permanentBulletLevel++;
                   hasBulletPowerUp = true;
                 }
+              } else if (box.type === "shield") {
+                if (1 + permanentShieldLevel < 5) {
+                  permanentShieldLevel++;
+                  hasShieldPowerUp = true;
+                  playerShield += 5;
+                }
+              } else if (box.type === "speed") {
+                if (1 + permanentSpeedLevel < 5) {
+                  permanentSpeedLevel++;
+                  hasSpeedPowerUp = true;
+                }
+              } else if (box.type === "multi") {
+                if (1 + permanentMultiLevel < 3) {
+                  permanentMultiLevel++;
+                  hasMultiPowerUp = true;
+                }
               }
               boxes.splice(i, 1);
               spawnRandomBox();
@@ -460,8 +520,13 @@
         }
         
         if (blobs[i].y + blobs[i].radius >= player.y) {
-          gameOver = true;
-          return;
+          if (playerShield > 0) {
+            playerShield--;
+            blobs.splice(i, 1);
+          } else {
+            gameOver = true;
+            return;
+          }
         }
         if (blobs[i].y - blobs[i].radius > canvas.height) {
           blobs.splice(i, 1);
@@ -471,8 +536,14 @@
       if (boss) {
         boss.y += boss.speed * speedMult;
         if (boss.y + boss.radius >= player.y) {
-          gameOver = true;
-          return;
+          if (playerShield > 0) {
+            playerShield -= 10;
+            if (playerShield < 0) playerShield = 0;
+            boss.y -= 50; // Push boss back up
+          } else {
+            gameOver = true;
+            return;
+          }
         }
         for (let i = bullets.length - 1; i >= 0; i--) {
           const dx = boss.x - bullets[i].x;
@@ -483,10 +554,13 @@
             bullets.splice(i, 1);
             if (boss.health <= 0) {
               boss = null;
-              permanentRapidLevel = 1;
-              permanentSprayLevel = 1;
-              permanentBulletLevel = permanentBulletLevel > 2 ? 1 : 0;
-              bombCount = bombCount >= 3 ? bombCount + 1 : (bombCount === 2 ? bombCount + 2 : 3);
+              // Bosses now give permanent bonuses instead of resets
+              score += 500;
+              bombCount = Math.min(bombCount + 2, 10);
+              // Slight permanent boost to all acquired power-ups
+              if (hasRapidPowerUp && permanentRapidLevel < 10) permanentRapidLevel++;
+              if (hasSprayPowerUp && permanentSprayLevel < 10) permanentSprayLevel++;
+              if (hasShieldPowerUp) playerShield += 10;
             }
             break;
           }
@@ -520,14 +594,95 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = player.color;
+      // Draw enhanced player ship with cool texture
+      ctx.save();
+      
+      // Main ship body with gradient
+      const shipGradient = ctx.createLinearGradient(player.x, player.y, player.x, player.y + player.height);
+      shipGradient.addColorStop(0, '#E0E0E0');
+      shipGradient.addColorStop(0.3, '#FFFFFF');
+      shipGradient.addColorStop(0.7, '#C0C0C0');
+      shipGradient.addColorStop(1, '#808080');
+      
+      // Ship body
+      ctx.fillStyle = shipGradient;
       ctx.fillRect(player.x, player.y, player.width, player.height);
+      
+      // Ship nose (triangular front)
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.moveTo(player.x + player.width / 2, player.y - 5);
+      ctx.lineTo(player.x + player.width * 0.3, player.y + 5);
+      ctx.lineTo(player.x + player.width * 0.7, player.y + 5);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Engine exhausts
+      ctx.fillStyle = '#FF4500';
+      ctx.fillRect(player.x + 5, player.y + player.height, 8, 6);
+      ctx.fillRect(player.x + player.width - 13, player.y + player.height, 8, 6);
+      
+      // Wing details
+      ctx.fillStyle = '#4169E1';
+      ctx.fillRect(player.x - 3, player.y + 8, 6, 8);
+      ctx.fillRect(player.x + player.width - 3, player.y + 8, 6, 8);
+      
+      // Cockpit
+      ctx.fillStyle = '#00CED1';
+      ctx.fillRect(player.x + player.width/2 - 8, player.y + 3, 16, 8);
+      
+      // Shield visual effect
+      if (playerShield > 0) {
+        ctx.strokeStyle = `rgba(0, 255, 255, ${Math.min(playerShield / 20, 1)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width/2 + 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      ctx.restore();
 
       bullets.forEach(bullet => {
-        ctx.fillStyle = bullet.color || 'yellow';
+        ctx.save();
+        
+        // Create bullet gradient
+        const bulletGradient = ctx.createRadialGradient(
+          bullet.x - 2, bullet.y - 2, 0,
+          bullet.x, bullet.y, bullet.radius
+        );
+        
+        if (bullet.color === 'cyan') {
+          // Enhanced bullet
+          bulletGradient.addColorStop(0, '#FFFFFF');
+          bulletGradient.addColorStop(0.3, '#00FFFF');
+          bulletGradient.addColorStop(1, '#0080FF');
+          
+          // Add glow effect
+          ctx.shadowColor = '#00FFFF';
+          ctx.shadowBlur = 8;
+        } else {
+          // Regular bullet
+          bulletGradient.addColorStop(0, '#FFFF00');
+          bulletGradient.addColorStop(0.5, '#FFD700');
+          bulletGradient.addColorStop(1, '#FFA500');
+          
+          ctx.shadowColor = '#FFFF00';
+          ctx.shadowBlur = 4;
+        }
+        
+        ctx.fillStyle = bulletGradient;
         ctx.beginPath();
         ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Add bullet trail effect
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = `rgba(255, 255, 255, 0.6)`;
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, bullet.radius * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
       });
 
       blobs.forEach(blob => {
@@ -681,20 +836,88 @@
       });
 
       if (boss) {
-        ctx.fillStyle = boss.color;
+        ctx.save();
+        
+        // Boss main body with complex gradient
+        const bossGradient = ctx.createRadialGradient(
+          boss.x - boss.radius * 0.3, boss.y - boss.radius * 0.3, 0,
+          boss.x, boss.y, boss.radius
+        );
+        bossGradient.addColorStop(0, '#FF6B6B');
+        bossGradient.addColorStop(0.3, '#FF0000');
+        bossGradient.addColorStop(0.6, '#8B0000');
+        bossGradient.addColorStop(1, '#4B0000');
+        
+        // Pulsating effect
+        const pulsate = Math.sin(Date.now() / 200) * 5;
+        const currentRadius = boss.radius + pulsate;
+        
+        // Main boss body
+        ctx.fillStyle = bossGradient;
         ctx.beginPath();
-        ctx.arc(boss.x, boss.y, boss.radius, 0, Math.PI * 2);
+        ctx.arc(boss.x, boss.y, currentRadius, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Boss armor segments
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2 + Date.now() / 1000;
+          const innerRadius = currentRadius * 0.7;
+          const outerRadius = currentRadius * 0.9;
+          ctx.beginPath();
+          ctx.moveTo(
+            boss.x + Math.cos(angle) * innerRadius,
+            boss.y + Math.sin(angle) * innerRadius
+          );
+          ctx.lineTo(
+            boss.x + Math.cos(angle) * outerRadius,
+            boss.y + Math.sin(angle) * outerRadius
+          );
+          ctx.stroke();
+        }
+        
+        // Boss core
+        const coreGradient = ctx.createRadialGradient(boss.x, boss.y, 0, boss.x, boss.y, currentRadius * 0.4);
+        coreGradient.addColorStop(0, '#FFFFFF');
+        coreGradient.addColorStop(0.5, '#FF4500');
+        coreGradient.addColorStop(1, '#FF0000');
+        ctx.fillStyle = coreGradient;
+        ctx.beginPath();
+        ctx.arc(boss.x, boss.y, currentRadius * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Menacing eyes
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.arc(boss.x - 20, boss.y - 15, 8, 0, Math.PI * 2);
+        ctx.arc(boss.x + 20, boss.y - 15, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(boss.x - 18, boss.y - 17, 3, 0, Math.PI * 2);
+        ctx.arc(boss.x + 22, boss.y - 17, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+        
+        // Health bar
         let bossHealthFraction = boss.health / boss.maxHealth;
         ctx.beginPath();
-        ctx.arc(boss.x, boss.y, boss.radius + 5, -Math.PI / 2, -Math.PI / 2 + bossHealthFraction * 2 * Math.PI);
-        ctx.strokeStyle = "orange";
-        ctx.lineWidth = 4;
+        ctx.arc(boss.x, boss.y, boss.radius + 8, -Math.PI / 2, -Math.PI / 2 + bossHealthFraction * 2 * Math.PI);
+        ctx.strokeStyle = bossHealthFraction > 0.5 ? "#00FF00" : bossHealthFraction > 0.25 ? "#FFFF00" : "#FF0000";
+        ctx.lineWidth = 6;
         ctx.stroke();
+        
+        // Health text with better styling
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 18px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(boss.health, boss.x, boss.y + 5);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.strokeText(boss.health, boss.x, boss.y + 6);
+        ctx.fillText(boss.health, boss.x, boss.y + 6);
       }
 
       boxes.forEach(box => {
@@ -725,47 +948,53 @@
       ctx.fillText('Score: ' + score, 10, 30);
       ctx.fillText('Difficulty: ' + difficulty.charAt(0).toUpperCase() + difficulty.slice(1), 10, 60);
       
-      // Power-up icons and levels (only show if acquired)
+      // Power-up icons and levels (only show if acquired, no names)
       let yOffset = 90;
+      let xOffset = 10;
+      
       if (hasRapidPowerUp) {
         // Draw rapid fire icon (lightning bolt)
         ctx.fillStyle = '#1E90FF';
-        ctx.fillRect(10, yOffset - 15, 20, 15);
+        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
         ctx.fillStyle = '#FFD700';
         ctx.beginPath();
-        ctx.moveTo(15, yOffset - 12);
-        ctx.lineTo(12, yOffset - 6);
-        ctx.lineTo(18, yOffset - 6);
-        ctx.lineTo(15, yOffset - 3);
-        ctx.lineTo(22, yOffset - 9);
-        ctx.lineTo(16, yOffset - 9);
+        ctx.moveTo(xOffset + 7, yOffset - 12);
+        ctx.lineTo(xOffset + 4, yOffset - 6);
+        ctx.lineTo(xOffset + 10, yOffset - 6);
+        ctx.lineTo(xOffset + 7, yOffset - 1);
+        ctx.lineTo(xOffset + 17, yOffset - 9);
+        ctx.lineTo(xOffset + 11, yOffset - 9);
         ctx.closePath();
         ctx.fill();
         ctx.fillStyle = 'white';
-        ctx.fillText('Rapid: ' + (1 + permanentRapidLevel), 35, yOffset);
-        yOffset += 30;
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(1 + permanentRapidLevel, xOffset + 12, yOffset + 15);
+        xOffset += 35;
       }
+      
       if (hasSprayPowerUp) {
         // Draw spray icon (multiple bullets)
         ctx.fillStyle = '#FFA500';
-        ctx.fillRect(10, yOffset - 15, 20, 15);
+        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
         ctx.fillStyle = '#FFD700';
         for (let i = 0; i < 3; i++) {
           ctx.beginPath();
-          ctx.arc(13 + i * 4, yOffset - 9, 2, 0, Math.PI * 2);
+          ctx.arc(xOffset + 6 + i * 4, yOffset - 6, 2, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.fillStyle = 'white';
-        ctx.fillText('Spray: ' + (1 + permanentSprayLevel), 35, yOffset);
-        yOffset += 30;
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(1 + permanentSprayLevel, xOffset + 12, yOffset + 15);
+        xOffset += 35;
       }
+      
       if (hasBulletPowerUp) {
         // Draw bullet power icon (explosive bullet)
         ctx.fillStyle = '#32CD32';
-        ctx.fillRect(10, yOffset - 15, 20, 15);
+        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
         ctx.fillStyle = '#FFD700';
         ctx.beginPath();
-        ctx.arc(20, yOffset - 9, 4, 0, Math.PI * 2);
+        ctx.arc(xOffset + 12, yOffset - 6, 4, 0, Math.PI * 2);
         ctx.fill();
         // Add explosion lines
         ctx.strokeStyle = '#FF4500';
@@ -773,19 +1002,83 @@
         for (let i = 0; i < 8; i++) {
           const angle = (i / 8) * Math.PI * 2;
           ctx.beginPath();
-          ctx.moveTo(20 + Math.cos(angle) * 3, yOffset - 9 + Math.sin(angle) * 3);
-          ctx.lineTo(20 + Math.cos(angle) * 6, yOffset - 9 + Math.sin(angle) * 6);
+          ctx.moveTo(xOffset + 12 + Math.cos(angle) * 3, yOffset - 6 + Math.sin(angle) * 3);
+          ctx.lineTo(xOffset + 12 + Math.cos(angle) * 6, yOffset - 6 + Math.sin(angle) * 6);
           ctx.stroke();
         }
         ctx.fillStyle = 'white';
-        ctx.fillText('Bullet: ' + (1 + permanentBulletLevel), 35, yOffset);
-        yOffset += 30;
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(1 + permanentBulletLevel, xOffset + 12, yOffset + 15);
+        xOffset += 35;
+      }
+      
+      if (hasShieldPowerUp) {
+        // Draw shield icon
+        ctx.fillStyle = '#9932CC';
+        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.moveTo(xOffset + 12, yOffset - 12);
+        ctx.lineTo(xOffset + 4, yOffset - 8);
+        ctx.lineTo(xOffset + 4, yOffset - 2);
+        ctx.lineTo(xOffset + 12, yOffset + 2);
+        ctx.lineTo(xOffset + 20, yOffset - 2);
+        ctx.lineTo(xOffset + 20, yOffset - 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(1 + permanentShieldLevel, xOffset + 12, yOffset + 15);
+        xOffset += 35;
+      }
+      
+      if (hasSpeedPowerUp) {
+        // Draw speed icon (wings)
+        ctx.fillStyle = '#FF69B4';
+        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.moveTo(xOffset + 4, yOffset - 6);
+        ctx.lineTo(xOffset + 12, yOffset - 12);
+        ctx.lineTo(xOffset + 12, yOffset - 3);
+        ctx.lineTo(xOffset + 20, yOffset - 6);
+        ctx.lineTo(xOffset + 12, yOffset + 1);
+        ctx.lineTo(xOffset + 12, yOffset - 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(1 + permanentSpeedLevel, xOffset + 12, yOffset + 15);
+        xOffset += 35;
+      }
+      
+      if (hasMultiPowerUp) {
+        // Draw multi-shot icon (arrows)
+        ctx.fillStyle = '#DC143C';
+        ctx.fillRect(xOffset, yOffset - 15, 25, 20);
+        ctx.fillStyle = '#FFD700';
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(xOffset + 5 + i * 4, yOffset - 10);
+          ctx.lineTo(xOffset + 8 + i * 4, yOffset - 12);
+          ctx.lineTo(xOffset + 8 + i * 4, yOffset - 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(1 + permanentMultiLevel, xOffset + 12, yOffset + 15);
+        xOffset += 35;
       }
       
       const blobLevel = Math.floor(score / 1000) + 1;
       ctx.fillStyle = 'white';
-      ctx.fillText('Blob Speed Level: ' + blobLevel, 10, yOffset);
-      ctx.fillText('Bombs: ' + bombCount, 10, yOffset + 30);
+      ctx.fillText('Level: ' + blobLevel, 10, yOffset + 50);
+      ctx.fillText('Bombs: ' + bombCount, 10, yOffset + 80);
+      if (playerShield > 0) {
+        ctx.fillStyle = 'cyan';
+        ctx.fillText('Shield: ' + playerShield, 10, yOffset + 110);
+      }
 
       if (bombFlashTimer > 0) {
         ctx.fillStyle = "rgba(255,255,255,0.5)";
