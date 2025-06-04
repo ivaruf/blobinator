@@ -1,4 +1,24 @@
-modules = ["web"]
+modules = ["python-3.11", "web"]
+run = "python server.py"
 
 [nix]
 channel = "stable-24_05"
+
+[workflows]
+runButton = "HTML Server"
+
+[[workflows.workflow]]
+name = "HTML Server"
+author = 43212522
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m http.server"
+
+[deployment]
+run = ["sh", "-c", "python server.py"]
+
+[[ports]]
+localPort = 8000
+externalPort = 80
