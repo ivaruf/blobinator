@@ -245,6 +245,9 @@
       } else if(type === "multi") {
         boxColor = "#DC143C";
         doorColor = "#B22222";
+      } else if(type === "bomb") {
+        boxColor = "#FFD700";
+        doorColor = "#FFA500";
       }
       const newBox = {
         x: Math.random() * (canvas.width - boxWidth),
@@ -263,7 +266,9 @@
     function spawnRandomBox(isInitial = false) {
       const rand = Math.random();
       let type;
-      if(rand < 0.005) {
+      if(rand < 0.002) {
+        type = "bomb";
+      } else if(rand < 0.005) {
         type = "bullet";
       } else if(rand < 0.02) {
         type = "shield";
@@ -310,8 +315,12 @@
 
     // Calculate progressive level score requirements
     function getNextLevelScore(level) {
-      // Progressive scaling: 5000, 7500, 10000, 12500, 15000, etc.
-      return 2500 * (level * 2 + 1);
+      // Start frequent, then exponential scaling: 1000, 2500, 4500, 7000, 10000, 13500, etc.
+      if (level <= 3) {
+        return level * 1000 + (level - 1) * 500; // 1000, 2500, 4500
+      } else {
+        return 4500 + (level - 3) * 2500; // 7000, 9500, 12000, etc.
+      }
     }
 
     // Level up function - clears enemies and power-ups, increases difficulty
@@ -360,8 +369,7 @@
       // Increase base difficulty for next level
       baseEnemySpeed += 0.1;
       
-      // Set next level threshold with progressive scaling
-      nextLevelScore = getNextLevelScore(currentLevel);
+      // Next level score is calculated dynamically now
       
       // Spawn new power-up boxes for the level
       spawnBoxes();
@@ -719,6 +727,8 @@
                   permanentMultiLevel++;
                   hasMultiPowerUp = true;
                 }
+              } else if (box.type === "bomb") {
+                bombCount = Math.min(bombCount + 1, 10);
               }
               boxes.splice(i, 1);
               spawnRandomBox();
@@ -729,7 +739,7 @@
       }
 
       // Check for level up - only if boss is defeated and score reached
-      if (score >= nextLevelScore && bossDefeatedThisLevel) {
+      if (score >= getNextLevelScore(currentLevel) && bossDefeatedThisLevel) {
         levelUp();
       }
 
@@ -780,7 +790,6 @@
               bossDefeatedThisLevel = true; // Mark boss as defeated for level progression
               // Bosses now give permanent bonuses instead of resets
               score += 500;
-              bombCount = Math.min(bombCount + 2, 10);
               // Slight permanent boost to all acquired power-ups
               if (hasRapidPowerUp && permanentRapidLevel < 10) permanentRapidLevel++;
               if (hasSprayPowerUp && permanentSprayLevel < 10) permanentSprayLevel++;
@@ -1210,9 +1219,6 @@
 
       ctx.fillStyle = hudGradient;
       ctx.fillRect(5, 5, hudWidth, hudHeight);
-      ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(5, 5, hudWidth, hudHeight);
 
       // Animated Score Display
       const scoreX = 15;
@@ -1260,9 +1266,11 @@
       ctx.fillText(difficulty.toUpperCase(), diffX + 15, scoreY - 1);
 
       // Level Display with Progress Bar
-      const pointsInLevel = score - (currentLevel - 1) * 5000;
-      const pointsNeeded = currentLevel * 5000 - (currentLevel - 1) * 5000;
-      const levelProgress = pointsInLevel / pointsNeeded;
+      const currentLevelThreshold = getNextLevelScore(currentLevel - 1);
+      const nextLevelThreshold = getNextLevelScore(currentLevel);
+      const pointsInLevel = score - currentLevelThreshold;
+      const pointsNeeded = nextLevelThreshold - currentLevelThreshold;
+      const levelProgress = Math.min(pointsInLevel / pointsNeeded, 1);
       const levelX = 15;
       const levelY = 70;
 
