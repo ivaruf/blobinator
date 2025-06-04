@@ -11,7 +11,7 @@ runButton = "HTML Server"
 [[workflows.workflow]]
 name = "HTML Server"
 author = 43212522
-mode = "sequential"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
