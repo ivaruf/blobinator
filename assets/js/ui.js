@@ -28,9 +28,11 @@ function drawScore() {
 }
 
 function drawDifficultyBadge() {
-  const diffX = 320 * mobileScale;
-  const diffY = 40 * mobileScale;
-  const radius = 15 * mobileScale;
+  // Position right next to the level text
+  const levelTextWidth = ctx.measureText(`LEVEL ${currentLevel}`).width;
+  const diffX = 15 * mobileScale + levelTextWidth + 20 * mobileScale;
+  const diffY = 80 * mobileScale - 10 * mobileScale; // Align with level text center
+  const radius = 8 * mobileScale; // Much smaller radius
   
   const colorMap = {
     'easy': { color: '#00FF00', glow: 'rgba(0, 255, 0, 0.6)' },
@@ -42,15 +44,15 @@ function drawDifficultyBadge() {
   
   // Neon glow effect
   ctx.shadowColor = colors.color;
-  ctx.shadowBlur = 20 * mobileScale;
+  ctx.shadowBlur = 12 * mobileScale;
   ctx.strokeStyle = colors.color;
-  ctx.lineWidth = 3 * mobileScale;
+  ctx.lineWidth = 2 * mobileScale;
   ctx.beginPath();
   ctx.arc(diffX, diffY, radius, 0, Math.PI * 2);
   ctx.stroke();
   
   // Inner glow
-  ctx.shadowBlur = 10 * mobileScale;
+  ctx.shadowBlur = 6 * mobileScale;
   ctx.fillStyle = colors.glow;
   ctx.beginPath();
   ctx.arc(diffX, diffY, radius * 0.7, 0, Math.PI * 2);
