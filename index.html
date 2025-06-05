@@ -31,36 +31,87 @@
     }
     #startGameBtn { top: 40%; }
     #tryAgainBtn { top: 50%; display: none; }
+    /* Cyberpunk neon button animations */
+    @keyframes neonPulse {
+      0%, 100% { 
+        text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+        box-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor, 0 0 20px currentColor;
+      }
+      50% { 
+        text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+        box-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor, 0 0 40px currentColor;
+      }
+    }
+    
+    @keyframes scanLine {
+      0% { transform: translateY(-100%); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateY(100%); opacity: 0; }
+    }
+    
     #easyBtn:hover {
-      transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 6px 25px rgba(76, 175, 80, 0.5), 0 0 20px rgba(129, 199, 132, 0.8);
-      border-color: rgba(165, 214, 167, 1);
+      transform: scale(1.08) translateY(-3px);
+      animation: neonPulse 1.5s infinite;
+      color: #00FF41 !important;
+      border-color: #00FF41 !important;
+      background: linear-gradient(45deg, #001100, #002200, #001100) !important;
     }
+    
     #mediumBtn:hover {
-      transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 6px 25px rgba(255, 152, 0, 0.5), 0 0 20px rgba(255, 183, 77, 0.8);
-      border-color: rgba(255, 204, 128, 1);
+      transform: scale(1.08) translateY(-3px);
+      animation: neonPulse 1.5s infinite;
+      color: #FF6B00 !important;
+      border-color: #FF6B00 !important;
+      background: linear-gradient(45deg, #220800, #441000, #220800) !important;
     }
+    
     #hardBtn:hover {
-      transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 6px 25px rgba(244, 67, 54, 0.5), 0 0 20px rgba(239, 83, 80, 0.8);
-      border-color: rgba(255, 138, 128, 1);
+      transform: scale(1.08) translateY(-3px);
+      animation: neonPulse 1.5s infinite;
+      color: #FF0040 !important;
+      border-color: #FF0040 !important;
+      background: linear-gradient(45deg, #220008, #440010, #220008) !important;
     }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <div id="difficultySelection" style="position: absolute; top: 20%; left: 50%; transform: translateX(-50%); text-align: center; z-index: 10; background: linear-gradient(135deg, rgba(10, 10, 30, 0.95), rgba(30, 10, 50, 0.95)); padding: 40px; border-radius: 20px; border: 2px solid rgba(100, 200, 255, 0.8); box-shadow: 0 0 30px rgba(100, 200, 255, 0.5);">
-    <h2 style="color: #E0E6FF; margin-bottom: 30px; text-shadow: 0 0 10px rgba(100, 200, 255, 0.8), 2px 2px 4px rgba(0,0,0,0.8); font-size: 36px; font-family: 'Courier New', monospace; letter-spacing: 3px;">⭐ SELECT MISSION ⭐</h2>
-    <div style="margin-bottom: 20px;">
-      <button id="easyBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(46, 125, 50, 0.9), rgba(76, 175, 80, 0.9)); color: #E8F5E8; border: 2px solid rgba(129, 199, 132, 0.8); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);">🌟 ROOKIE</button>
+  <div id="difficultySelection" style="position: absolute; top: 15%; left: 50%; transform: translateX(-50%); text-align: center; z-index: 10; background: linear-gradient(145deg, rgba(5, 5, 15, 0.98), rgba(15, 5, 25, 0.98), rgba(25, 5, 35, 0.98)); padding: 50px; border-radius: 0px; border: 3px solid #00FFFF; box-shadow: 0 0 50px #00FFFF, inset 0 0 50px rgba(0, 255, 255, 0.1); position: relative; overflow: hidden;">
+    <!-- Animated scan lines -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #00FFFF, transparent); animation: scanLine 3s infinite; z-index: 1;"></div>
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, #FF6B00, transparent); animation: scanLine 4s infinite 1s; z-index: 1;"></div>
+    
+    <!-- Grid overlay -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; z-index: 1;"></div>
+    
+    <h2 style="position: relative; z-index: 2; color: #00FFFF; margin-bottom: 40px; text-shadow: 0 0 20px #00FFFF, 0 0 40px #00FFFF, 2px 2px 4px #000; font-size: 42px; font-family: 'Courier New', monospace; letter-spacing: 6px; text-transform: uppercase; animation: neonPulse 2s infinite;">◢◤ CYBER MISSION ◥◣</h2>
+    
+    <div style="margin-bottom: 25px; position: relative; z-index: 2;">
+      <button id="easyBtn" style="width: 240px; margin: 10px; padding: 20px 35px; font-size: 20px; background: linear-gradient(45deg, #001a00, #003300, #001a00); color: #00FF41; border: 2px solid #00FF41; border-radius: 0px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 0 0 10px #00FF41; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(0, 255, 65, 0.3); text-transform: uppercase; letter-spacing: 2px; position: relative; overflow: hidden;">
+        <span style="position: relative; z-index: 2;">▲ NOVICE_PROTOCOL ▲</span>
+        <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(0, 255, 65, 0.1), transparent); transform: rotate(45deg); transition: all 0.5s;"></div>
+      </button>
     </div>
-    <div style="margin-bottom: 20px;">
-      <button id="mediumBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(245, 124, 0, 0.9), rgba(255, 152, 0, 0.9)); color: #FFF3E0; border: 2px solid rgba(255, 183, 77, 0.8); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);">⚡ PILOT</button>
+    
+    <div style="margin-bottom: 25px; position: relative; z-index: 2;">
+      <button id="mediumBtn" style="width: 240px; margin: 10px; padding: 20px 35px; font-size: 20px; background: linear-gradient(45deg, #1a0800, #330f00, #1a0800); color: #FF6B00; border: 2px solid #FF6B00; border-radius: 0px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 0 0 10px #FF6B00; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(255, 107, 0, 0.3); text-transform: uppercase; letter-spacing: 2px; position: relative; overflow: hidden;">
+        <span style="position: relative; z-index: 2;">◆ NEURAL_INTERFACE ◆</span>
+        <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(255, 107, 0, 0.1), transparent); transform: rotate(45deg); transition: all 0.5s;"></div>
+      </button>
     </div>
-    <div style="margin-bottom: 20px;">
-      <button id="hardBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(198, 40, 40, 0.9), rgba(244, 67, 54, 0.9)); color: #FFEBEE; border: 2px solid rgba(239, 83, 80, 0.8); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);">🔥 ACE</button>
+    
+    <div style="margin-bottom: 25px; position: relative; z-index: 2;">
+      <button id="hardBtn" style="width: 240px; margin: 10px; padding: 20px 35px; font-size: 20px; background: linear-gradient(45deg, #1a0008, #330010, #1a0008); color: #FF0040; border: 2px solid #FF0040; border-radius: 0px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 0 0 10px #FF0040; transition: all 0.3s ease; box-shadow: 0 0 20px rgba(255, 0, 64, 0.3); text-transform: uppercase; letter-spacing: 2px; position: relative; overflow: hidden;">
+        <span style="position: relative; z-index: 2;">▼ GHOST_IN_SHELL ▼</span>
+        <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(255, 0, 64, 0.1), transparent); transform: rotate(45deg); transition: all 0.5s;"></div>
+      </button>
     </div>
+    
+    <!-- Corner decorations -->
+    <div style="position: absolute; top: 10px; left: 10px; width: 30px; height: 30px; border-top: 3px solid #00FFFF; border-left: 3px solid #00FFFF; z-index: 2;"></div>
+    <div style="position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-top: 3px solid #00FFFF; border-right: 3px solid #00FFFF; z-index: 2;"></div>
+    <div style="position: absolute; bottom: 10px; left: 10px; width: 30px; height: 30px; border-bottom: 3px solid #00FFFF; border-left: 3px solid #00FFFF; z-index: 2;"></div>
+    <div style="position: absolute; bottom: 10px; right: 10px; width: 30px; height: 30px; border-bottom: 3px solid #00FFFF; border-right: 3px solid #00FFFF; z-index: 2;"></div>
   </div>
   <button id="startGameBtn" style="display: none;">Start Game</button>
   <button id="tryAgainBtn">Try Again</button>
