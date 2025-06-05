@@ -19,7 +19,7 @@ class NoCacheHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         return mimetype
 
 if __name__ == "__main__":
-    PORT = 5000
+    PORT = 8000
     Handler = NoCacheHTTPRequestHandler
     
     with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:
