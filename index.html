@@ -33,33 +33,36 @@
     #tryAgainBtn { top: 50%; display: none; }
     #easyBtn:hover {
       transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 6px 25px rgba(76, 175, 80, 0.5), 0 0 20px rgba(129, 199, 132, 0.8);
-      border-color: rgba(165, 214, 167, 1);
+      box-shadow: 0 0 25px rgba(0, 255, 0, 0.6), 0 0 40px rgba(0, 255, 0, 0.4);
+      border-color: rgba(0, 255, 0, 1);
+      text-shadow: 0 0 12px rgba(0, 255, 0, 1);
     }
     #mediumBtn:hover {
       transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 6px 25px rgba(255, 152, 0, 0.5), 0 0 20px rgba(255, 183, 77, 0.8);
-      border-color: rgba(255, 204, 128, 1);
+      box-shadow: 0 0 25px rgba(255, 165, 0, 0.6), 0 0 40px rgba(255, 165, 0, 0.4);
+      border-color: rgba(255, 165, 0, 1);
+      text-shadow: 0 0 12px rgba(255, 165, 0, 1);
     }
     #hardBtn:hover {
       transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 6px 25px rgba(244, 67, 54, 0.5), 0 0 20px rgba(239, 83, 80, 0.8);
-      border-color: rgba(255, 138, 128, 1);
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.6), 0 0 40px rgba(255, 0, 0, 0.4);
+      border-color: rgba(255, 0, 0, 1);
+      text-shadow: 0 0 12px rgba(255, 0, 0, 1);
     }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <div id="difficultySelection" style="position: absolute; top: 20%; left: 50%; transform: translateX(-50%); text-align: center; z-index: 10; background: linear-gradient(135deg, rgba(10, 10, 30, 0.95), rgba(30, 10, 50, 0.95)); padding: 40px; border-radius: 20px; border: 2px solid rgba(100, 200, 255, 0.8); box-shadow: 0 0 30px rgba(100, 200, 255, 0.5);">
-    <h2 style="color: #E0E6FF; margin-bottom: 30px; text-shadow: 0 0 10px rgba(100, 200, 255, 0.8), 2px 2px 4px rgba(0,0,0,0.8); font-size: 36px; font-family: 'Courier New', monospace; letter-spacing: 3px;">⭐ SELECT MISSION ⭐</h2>
+  <div id="difficultySelection" style="position: absolute; top: 20%; left: 50%; transform: translateX(-50%); text-align: center; z-index: 10; background: linear-gradient(135deg, rgba(10, 10, 30, 0.95), rgba(30, 10, 50, 0.95)); padding: 40px; border-radius: 20px; border: 2px solid rgba(0, 255, 255, 0.6); box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 20px rgba(0, 255, 255, 0.1);">
+    <h2 style="color: #FFFFFF; margin-bottom: 30px; text-shadow: 0 0 15px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.4); font-size: 36px; font-family: 'Courier New', monospace; letter-spacing: 3px;">⭐ SELECT MISSION ⭐</h2>
     <div style="margin-bottom: 20px;">
-      <button id="easyBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(46, 125, 50, 0.9), rgba(76, 175, 80, 0.9)); color: #E8F5E8; border: 2px solid rgba(129, 199, 132, 0.8); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);">🌟 ROOKIE</button>
+      <button id="easyBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(0, 255, 0, 0.2), rgba(0, 200, 0, 0.3)); color: #00FF00; border: 2px solid rgba(0, 255, 0, 0.7); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(0, 255, 0, 0.8); transition: all 0.2s ease; box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);">🌟 ROOKIE</button>
     </div>
     <div style="margin-bottom: 20px;">
-      <button id="mediumBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(245, 124, 0, 0.9), rgba(255, 152, 0, 0.9)); color: #FFF3E0; border: 2px solid rgba(255, 183, 77, 0.8); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);">⚡ PILOT</button>
+      <button id="mediumBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(255, 165, 0, 0.2), rgba(255, 140, 0, 0.3)); color: #FFB000; border: 2px solid rgba(255, 165, 0, 0.7); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(255, 165, 0, 0.8); transition: all 0.2s ease; box-shadow: 0 0 15px rgba(255, 165, 0, 0.3);">⚡ PILOT</button>
     </div>
     <div style="margin-bottom: 20px;">
-      <button id="hardBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(198, 40, 40, 0.9), rgba(244, 67, 54, 0.9)); color: #FFEBEE; border: 2px solid rgba(239, 83, 80, 0.8); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);">🔥 ACE</button>
+      <button id="hardBtn" style="width: 200px; margin: 8px; padding: 18px 30px; font-size: 18px; background: linear-gradient(135deg, rgba(255, 0, 0, 0.2), rgba(220, 0, 0, 0.3)); color: #FF4444; border: 2px solid rgba(255, 0, 0, 0.7); border-radius: 12px; cursor: pointer; font-weight: bold; font-family: 'Courier New', monospace; text-shadow: 0 0 8px rgba(255, 0, 0, 0.8); transition: all 0.2s ease; box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);">🔥 ACE</button>
     </div>
   </div>
   <button id="startGameBtn" style="display: none;">Start Game</button>
