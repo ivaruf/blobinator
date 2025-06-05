@@ -1470,16 +1470,6 @@
       // Enhanced HUD with graphics and animations
       ctx.save();
 
-      // HUD Background Panel
-      const hudWidth = 280;
-      const hudHeight = 140;
-      const hudGradient = ctx.createLinearGradient(0, 0, hudWidth, hudHeight);
-      hudGradient.addColorStop(0, 'rgba(0, 20, 40, 0.4)');
-      hudGradient.addColorStop(1, 'rgba(0, 10, 20, 0.4)');
-
-      ctx.fillStyle = hudGradient;
-      ctx.fillRect(5, 5, hudWidth, hudHeight);
-
       // Animated Score Display
       const scoreX = 15;
       const scoreY = 30;
@@ -1562,9 +1552,9 @@
       ctx.lineWidth = 1;
       ctx.strokeRect(barX, barY, barWidth, barHeight);
 
-      // Bombs Display with Graphics - moved down to avoid score overlap
-      const bombX = 300;
-      const bombY = 100;
+      // Bombs Display with Graphics - moved to top right
+      const bombX = canvas.width - 200;
+      const bombY = 30;
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px Arial';
       ctx.fillText('BOMBS:', bombX, bombY);
@@ -1786,16 +1776,12 @@
         ctx.fillStyle = '#FFD700';
         ctx.font = 'bold 12px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(level, x, y + radius + 20);
-
-        // Level progress dots
-        for (let i = 0; i < maxLevel; i++) {
-          const dotX = x - (maxLevel * 3) + i * 6;
-          const dotY = y + radius + 35;
-          ctx.fillStyle = i < level ? '#FFD700' : 'rgba(255, 215, 0, 0.3)';
-          ctx.beginPath();
-          ctx.arc(dotX, dotY, 2, 0, Math.PI * 2);
-          ctx.fill();
+        
+        // Show MAX if at max level, otherwise show level number
+        if (level >= maxLevel) {
+          ctx.fillText('MAX', x, y + radius + 20);
+        } else {
+          ctx.fillText(level, x, y + radius + 20);
         }
       }
 
