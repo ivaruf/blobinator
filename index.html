@@ -364,7 +364,7 @@
       // Visual wave effect will be handled in draw function
       const waveStartTime = Date.now();
       
-      // Damage all enemies on screen
+      // Damage all enemies on screen (but NOT power-up boxes)
       for (let i = blobs.length - 1; i >= 0; i--) {
         blobs[i].health -= 1000;
         if (blobs[i].health <= 0) {
@@ -395,10 +395,9 @@
       // Trigger level-up wave attack before clearing
       triggerLevelUpWave();
       
-      // Clear remaining enemies and power-ups after wave
+      // Clear remaining enemies after wave (but keep power-up boxes)
       setTimeout(() => {
         blobs = [];
-        boxes = [];
         if (boss && boss.health <= 0) {
           boss = null;
         }
@@ -1500,8 +1499,8 @@
         // Shield fill with pulsing effect
         const shieldPulse = Math.sin(Date.now() / 300) * 0.3 + 0.7;
         const shieldGradient = ctx.createLinearGradient(shieldBarX, shieldBarY, shieldBarX + shieldBarWidth, shieldBarY);
-        shieldGradient.addColorStop(0, `rgba(0, 255, 255, ${shieldPulse})`);
-        shieldGradient.addColorStop(1, `rgba(0, 150, 255, ${shieldPulse})`);
+        shieldGradient.addColorStop(0, 'rgba(0, 255, 255, ' + shieldPulse + ')');
+        shieldGradient.addColorStop(1, 'rgba(0, 150, 255, ' + shieldPulse + ')');
         ctx.fillStyle = shieldGradient;
         ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth * shieldPercent, shieldBarHeight);
 
