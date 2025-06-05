@@ -212,11 +212,11 @@
       const count = Math.floor(baseCount * diffSettings.spawnMultiplier);
       const clusterCenterX = Math.random() * (canvas.width - 100) + 50;
       const spread = 50;
-      
+
       // Level-based enemy scaling - more aggressive health increase
       const levelHealthBonus = Math.floor((currentLevel - 1) * diffSettings.levelHealthIncrease * 2);
       const levelSpeedBonus = (currentLevel - 1) * diffSettings.levelSpeedIncrease;
-      
+
       for (let i = 0; i < count; i++) {
         const offsetX = (Math.random() - 0.5) * spread;
         const offsetY = (Math.random() - 0.5) * spread;
@@ -298,10 +298,10 @@
     function spawnRandomBox(isInitial = false) {
       const rand = Math.random();
       let type;
-      
+
       // Level-based power-up availability
       const availablePowerUps = ['rapid']; // Always available
-      
+
       if (currentLevel >= 1) {
         availablePowerUps.push('spray');
       }
@@ -317,7 +317,7 @@
       if (currentLevel >= 5) {
         availablePowerUps.push('bomb');
       }
-      
+
       // Select random type from available power-ups
       if (availablePowerUps.includes('bomb') && rand < 0.002) {
         type = "bomb";
@@ -334,20 +334,20 @@
       } else {
         type = "rapid";
       }
-      
+
       spawnBoxForType(type, isInitial);
     }
 
     function spawnBoxes() {
       // Clear existing boxes first to prevent overflow
       boxes = [];
-      
+
       // Always spawn rapid fire
       spawnBoxForType("rapid", true);
-      
+
       // Always spawn spray since it's available from level 1
       spawnBoxForType("spray", true);
-      
+
       // Spawn additional power-ups based on level (max 5 total)
       if (currentLevel >= 2 && boxes.length < 5) {
         spawnBoxForType("bullet", true);
@@ -394,12 +394,12 @@
         return 25000 + (level - 5) * 20000;
       }
     }
-    
+
     // Level-up wave attack function
     function triggerLevelUpWave() {
       // Visual wave effect will be handled in draw function
       const waveStartTime = Date.now();
-      
+
       // Damage all enemies on screen (but NOT power-up boxes)
       for (let i = blobs.length - 1; i >= 0; i--) {
         blobs[i].health -= 1000;
@@ -408,7 +408,7 @@
           blobs.splice(i, 1);
         }
       }
-      
+
       // Damage boss if present
       if (boss) {
         boss.health -= 1000;
@@ -418,7 +418,7 @@
           score += 500;
         }
       }
-      
+
       // Set wave animation timer
       levelUpWaveTimer = 60; // 1 second at 60 FPS
     }
@@ -426,7 +426,7 @@
     // Power-up decay function
     function updatePowerUpDecay() {
       const currentTime = Date.now();
-      
+
       // Check decay for each power-up type
       ['rapid', 'spray', 'bullet', 'shield', 'speed', 'multi'].forEach(type => {
         let currentLevel;
@@ -438,7 +438,7 @@
           case 'speed': currentLevel = permanentSpeedLevel; break;
           case 'multi': currentLevel = permanentMultiLevel; break;
         }
-        
+
         // Only decay if above level 2
         if (currentLevel > 2) {
           // Check if it's time to decay
@@ -466,7 +466,7 @@
                 permanentMultiLevel = Math.max(2, permanentMultiLevel - 1);
                 break;
             }
-            
+
             // Reset decay timer for this power-up
             powerUpDecayTimers[type] = currentTime;
             setPowerUpDecayInterval(type);
@@ -474,12 +474,12 @@
         }
       });
     }
-    
+
     // Set decay interval based on power-up level (higher level = faster decay)
     function setPowerUpDecayInterval(type) {
       let currentLevel;
       let maxLevel;
-      
+
       switch(type) {
         case 'rapid': 
           currentLevel = permanentRapidLevel; 
@@ -506,7 +506,7 @@
           maxLevel = 3;
           break;
       }
-      
+
       if (currentLevel <= 2) {
         powerUpDecayIntervals[type] = 0; // No decay at level 2 or below
       } else {
@@ -524,10 +524,10 @@
     function levelUp() {
       currentLevel++;
       levelUpDisplay = 180; // Display "Level X" for 3 seconds at 60 FPS
-      
+
       // Trigger level-up wave attack before clearing
       triggerLevelUpWave();
-      
+
       // Clear remaining enemies after wave (but keep power-up boxes)
       setTimeout(() => {
         blobs = [];
@@ -536,7 +536,7 @@
         }
         bossDefeatedThisLevel = true; // Reset boss defeat status for new level
       }, 1000);
-      
+
       // Much less aggressive power-up reduction on level up
       // Only reduce power-ups by 1 level if they're above level 3
       if (permanentRapidLevel > 3) permanentRapidLevel = Math.max(2, permanentRapidLevel - 1);
@@ -548,7 +548,7 @@
       }
       if (permanentSpeedLevel > 3) permanentSpeedLevel = Math.max(2, permanentSpeedLevel - 1);
       if (permanentMultiLevel > 2) permanentMultiLevel = Math.max(2, permanentMultiLevel - 1);
-      
+
       // Update power-up flags based on current levels
       hasRapidPowerUp = permanentRapidLevel > 0;
       hasSprayPowerUp = permanentSprayLevel > 0;
@@ -556,18 +556,18 @@
       hasShieldPowerUp = permanentShieldLevel > 0;
       hasSpeedPowerUp = permanentSpeedLevel > 0;
       hasMultiPowerUp = permanentMultiLevel > 0;
-      
+
       // Reset skill-based progression for new level
       killStreak = 0;
       skillPoints = 0;
       temporaryBoosts.clear();
-      
+
       // Increase base difficulty for next level
       baseEnemySpeed += 0.1;
-      
+
       // Spawn new power-up boxes for the level
       spawnBoxes();
-      
+
       // Reset boss threshold
       nextBossScore = score + 3500;
     }
@@ -613,9 +613,9 @@
         rapid: 0,
         spray: 0,
         bullet: 0,
-        shield: 0,
-        speed: 0,
-        multi: 0
+        shield: currentTime,
+        speed: currentTime,
+        multi: currentTime
       };
 
       // Reset level system
@@ -878,9 +878,14 @@
 
       blobSpawnTimer++;
       const elapsedTime = Date.now() - startTime;
+      const activePowerUps = (hasRapidPowerUp ? 1 : 0) + (hasSprayPowerUp ? 1 : 0) + (hasBulletPowerUp ? 1 : 0) + (hasShieldPowerUp ? 1 : 0) + (hasSpeedPowerUp ? 1 : 0) + (hasMultiPowerUp ? 1 : 0);
+      let spawnFactor = 1;
+      if (activePowerUps > 3) {
+        spawnFactor = 0.6; //Reduce spawn by 40%
+      }
       const diffSettings = getDifficultySettings();
       const baseInterval = elapsedTime < 60000 ? diffSettings.spawnInterval : Math.floor(diffSettings.spawnInterval * 0.25);
-      if (blobSpawnTimer > baseInterval) {
+      if (blobSpawnTimer > baseInterval * spawnFactor) {
         spawnCluster();
         blobSpawnTimer = 0;
       }
@@ -902,16 +907,16 @@
               bullets[j].y >= doorY && bullets[j].y <= box.y + box.height) {
             box.health -= bullets[j].damage;
             bullets.splice(j, 1);
-            
+
             // Award points for shooting power-up boxes
             score += 5;
             totalShots++;
             totalHits++;
-            
+
             if (box.health <= 0) {
               // Bonus points for destroying power-up box
               score += 25;
-              
+
               if (box.type === "rapid") {
                 if (1 + permanentRapidLevel < 10) {
                   permanentRapidLevel++;
@@ -937,7 +942,7 @@
                 if (1 + permanentShieldLevel < 5) {
                   permanentShieldLevel++;
                   hasShieldPowerUp = true;
-                  playerShield += 5;
+                  playerShield = Math.min(playerShield + 5, 10);
                   powerUpDecayTimers.shield = Date.now();
                   setPowerUpDecayInterval('shield');
                 }
@@ -1257,7 +1262,7 @@
           ctx.strokeStyle = "orange";
           ctx.lineWidth = 4;
           ctx.stroke();
-          
+
           // HP text display
           ctx.fillStyle = 'white';
           ctx.font = 'bold 14px Arial';
@@ -1348,7 +1353,7 @@
           ctx.strokeStyle = "lime";
           ctx.lineWidth = 3;
           ctx.stroke();
-          
+
           // HP text display
           ctx.fillStyle = 'white';
           ctx.font = 'bold 12px Arial';
@@ -1553,7 +1558,7 @@
       ctx.strokeRect(barX, barY, barWidth, barHeight);
 
       // Bombs Display with Graphics - moved to top right
-      const bombX = canvas.width - 200;
+      const bombX = canvas.width - 100;
       const bombY = 30;
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px Arial';
@@ -1565,11 +1570,11 @@
 
         // Enhanced bomb with multiple layers
         const bombGlow = Math.sin(Date.now() / 150 + i) * 0.3 + 0.7;
-        
+
         // Outer glow
         ctx.shadowColor = '#FF4500';
         ctx.shadowBlur = 10 * bombGlow;
-        
+
         // Main bomb body - larger and more detailed
         const bombGradient = ctx.createRadialGradient(bx-2, by-2, 0, bx, by, 10);
         bombGradient.addColorStop(0, '#FFFFFF');
@@ -1601,7 +1606,7 @@
         ctx.beginPath();
         ctx.arc(bx - 10, by - 10, 2, 0, Math.PI * 2);
         ctx.fill();
-        
+
         ctx.shadowBlur = 0;
       }
 
@@ -1695,11 +1700,11 @@
         const radius = size / 2;
         const vertices = 8;
         const irregularity = 0.3;
-        
+
         // Create irregular asteroid shape
         ctx.save();
         ctx.translate(x, y);
-        
+
         // Main asteroid body with rocky texture
         const asteroidGradient = ctx.createRadialGradient(-radius*0.3, -radius*0.3, 0, 0, 0, radius);
         asteroidGradient.addColorStop(0, 'rgba(200, 200, 200, 0.9)');
@@ -1739,14 +1744,14 @@
           const depletionRadius = radius + 6;
           const startAngle = -Math.PI / 2;
           const endAngle = startAngle + (2 * Math.PI * decayProgress);
-          
+
           // Background circle
           ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
           ctx.lineWidth = 4;
           ctx.beginPath();
           ctx.arc(0, 0, depletionRadius, 0, Math.PI * 2);
           ctx.stroke();
-          
+
           // Depletion arc - changes color as it depletes
           const depletionColor = decayProgress > 0.7 ? '#FF4500' : decayProgress > 0.4 ? '#FFD700' : '#00FF00';
           ctx.strokeStyle = depletionColor;
@@ -1776,7 +1781,7 @@
         ctx.fillStyle = '#FFD700';
         ctx.font = 'bold 12px Arial';
         ctx.textAlign = 'center';
-        
+
         // Show MAX if at max level, otherwise show level number
         if (level >= maxLevel) {
           ctx.fillText('MAX', x, y + radius + 20);
@@ -1792,7 +1797,7 @@
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'right';
-      ctx.fillText('v2.1', canvas.width - 10, 25);
+      ctx.fillText('', canvas.width - 10, 25);
       ctx.restore();
 
       // Level-up wave effect
@@ -1801,25 +1806,25 @@
         const waveProgress = (60 - levelUpWaveTimer) / 60;
         const waveRadius = waveProgress * Math.max(canvas.width, canvas.height) * 1.5;
         const waveAlpha = 1 - waveProgress;
-        
+
         // Draw expanding wave from player position
         ctx.globalAlpha = waveAlpha;
         ctx.strokeStyle = '#FFD700';
         ctx.lineWidth = 8;
         ctx.shadowColor = '#FFD700';
         ctx.shadowBlur = 20;
-        
+
         ctx.beginPath();
         ctx.arc(player.x + player.width/2, player.y + player.height/2, waveRadius, 0, Math.PI * 2);
         ctx.stroke();
-        
+
         // Secondary wave for more dramatic effect
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.arc(player.x + player.width/2, player.y + player.height/2, waveRadius * 0.8, 0, Math.PI * 2);
         ctx.stroke();
-        
+
         ctx.restore();
         levelUpWaveTimer--;
       }
@@ -1829,11 +1834,11 @@
         ctx.save();
         const alpha = levelUpDisplay > 120 ? 1 : levelUpDisplay / 120;
         const scale = 1 + (180 - levelUpDisplay) / 60;
-        
+
         ctx.globalAlpha = alpha;
         ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.scale(scale, scale);
-        
+
         // Background glow
         ctx.shadowColor = '#FFD700';
         ctx.shadowBlur = 20;
@@ -1841,12 +1846,12 @@
         ctx.font = 'bold 48px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(`LEVEL ${currentLevel}`, 0, 0);
-        
+
         // Main text
         ctx.shadowBlur = 0;
         ctx.fillStyle = 'white';
         ctx.fillText(`LEVEL ${currentLevel}`, 0, 0);
-        
+
         ctx.restore();
         levelUpDisplay--;
       }
