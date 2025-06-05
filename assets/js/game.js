@@ -92,12 +92,19 @@ let skillPoints = 0;
 let weaponEvolution = 0;
 let temporaryBoosts = new Map();
 
-// Initialize canvas
+// Initialize canvas and ensure all variables are ready
 resizeCanvas();
 resetPlayerPosition();
+
+// Make sure mobileScale is globally available
+window.mobileScale = mobileScale;
+window.isMobile = isMobile;
+
 window.addEventListener('resize', () => {
   resizeCanvas();
   resetPlayerPosition();
+  window.mobileScale = mobileScale;
+  window.isMobile = isMobile;
 });
 
 // Calculate progressive level score requirements

@@ -1,6 +1,11 @@
 
 // Entities module - Player, enemies, bullets, powerups
 
+// Ensure required variables are available
+if (typeof mobileScale === 'undefined') {
+  var mobileScale = 1;
+}
+
 // Player setup
 const player = {
   x: 0,
@@ -13,8 +18,17 @@ const player = {
 };
 
 function resetPlayerPosition() {
+  // Ensure canvas exists and has dimensions
+  if (!canvas || !canvas.width || !canvas.height) {
+    return;
+  }
+  
+  // Ensure mobileScale is defined
+  const scale = (typeof mobileScale !== 'undefined') ? mobileScale : 1;
+  const mobile = (typeof isMobile !== 'undefined') ? isMobile : false;
+  
   player.x = canvas.width / 2 - (player.scaledWidth / 2);
-  const bottomOffset = isMobile ? Math.max(80 * mobileScale, canvas.height * 0.1) : 80;
+  const bottomOffset = mobile ? Math.max(80 * scale, canvas.height * 0.1) : 80;
   player.y = canvas.height - bottomOffset;
 }
 

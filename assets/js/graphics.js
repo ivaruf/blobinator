@@ -1,6 +1,11 @@
 
 // Graphics module - All drawing and rendering functions
 
+// Ensure mobileScale is available
+if (typeof mobileScale === 'undefined') {
+  var mobileScale = 1;
+}
+
 function drawPlayer() {
   ctx.save();
 
@@ -70,9 +75,14 @@ function drawBullets() {
   bullets.forEach(bullet => {
     ctx.save();
 
+    // Safety check for finite values
+    const radius = isFinite(bullet.radius) ? bullet.radius : 5;
+    const x = isFinite(bullet.x) ? bullet.x : 0;
+    const y = isFinite(bullet.y) ? bullet.y : 0;
+
     const bulletGradient = ctx.createRadialGradient(
-      bullet.x - 2, bullet.y - 2, 0,
-      bullet.x, bullet.y, bullet.radius
+      x - 2, y - 2, 0,
+      x, y, radius
     );
 
     if (bullet.color === 'cyan') {
@@ -172,9 +182,14 @@ function drawSpinnerBlob(blob) {
 function drawRegularBlob(blob) {
   ctx.save();
 
+  // Safety check for finite values
+  const radius = isFinite(blob.radius) ? blob.radius : 20;
+  const x = isFinite(blob.x) ? blob.x : 0;
+  const y = isFinite(blob.y) ? blob.y : 0;
+
   const gradient = ctx.createRadialGradient(
-    blob.x - blob.radius * 0.3, blob.y - blob.radius * 0.3, 0,
-    blob.x, blob.y, blob.radius
+    x - radius * 0.3, y - radius * 0.3, 0,
+    x, y, radius
   );
   gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
   gradient.addColorStop(0.3, blob.color);
