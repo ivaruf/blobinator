@@ -1536,25 +1536,128 @@
       }
 
       boxes.forEach(box => {
-        ctx.fillStyle = box.boxColor;
-        ctx.fillRect(box.x, box.y, box.width, box.height);
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(box.x, box.y, box.width, box.height);
+        ctx.save();
+        
+        // Calculate asteroid center and size
+        const centerX = box.x + box.width / 2;
+        const centerY = box.y + box.height / 2;
+        const radius = Math.min(box.width, box.height) / 2;
+        
+        // Create floating animation
+        const floatOffset = Math.sin(Date.now() / 1000 + box.x * 0.01) * 3;
+        const currentY = centerY + floatOffset;
+        
+        // Create irregular asteroid shape
+        const vertices = 12;
+        const irregularity = 0.3;
+        const points = [];
+        
+        for (let i = 0; i < vertices; i++) {
+          const angle = (i / vertices) * Math.PI * 2;
+          const variation = (Math.sin(angle * 3 + box.x * 0.1) * irregularity + 1);
+          const r = radius * variation;
+          points.push({
+            x: centerX + Math.cos(angle) * r,
+            y: currentY + Math.sin(angle) * r
+          });
+        }
+        
+        // Create gradient for asteroid texture
+        const asteroidGradient = ctx.createRadialGradient(
+          centerX - radius * 0.3, currentY - radius * 0.3, 0,
+          centerX, currentY, radius
+        );
+        asteroidGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+        asteroidGradient.addColorStop(0.3, box.boxColor);
+        asteroidGradient.addColorStop(0.7, box.doorColor);
+        asteroidGradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+        
+        // Draw main asteroid body
+        ctx.fillStyle = asteroidGradient;
         ctx.beginPath();
-        ctx.moveTo(box.x, box.y + box.height / 2);
-        ctx.lineTo(box.x + box.width, box.y + box.height / 2);
-        ctx.moveTo(box.x + box.width / 2, box.y);
-        ctx.lineTo(box.x + box.width / 2, box.y + box.height);
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        
+        // Add rocky surface details
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 6; i++) {
+          const angle = (i / 6) * Math.PI * 2;
+          const startR = radius * 0.4;
+          const endR = radius * 0.8;
+          const startX = centerX + Math.cos(angle) * startR;
+          const startY = currentY + Math.sin(angle) * startR;
+          const endX = centerX + Math.cos(angle) * endR;
+          const endY = currentY + Math.sin(angle) * endR;
+          
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+        }
+        
+        // Add crater-like depressions
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        for (let i = 0; i < 4; i++) {
+          const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+          const craterRadius = radius * 0.15;
+          const distance = radius * 0.5;
+          const craterX = centerX + Math.cos(angle) * distance;
+          const craterY = currentY + Math.sin(angle) * distance;
+          
+          ctx.beginPath();
+          ctx.arc(craterX, craterY, craterRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        
+        // Add subtle glow effect
+        ctx.shadowColor = box.boxColor;
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = box.boxColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.closePath();
         ctx.stroke();
-        const doorHeight = box.height * 0.2;
-        const doorY = box.y + box.height - doorHeight;
-        ctx.fillStyle = box.doorColor;
-        ctx.fillRect(box.x, doorY, box.width, doorHeight);
+        ctx.shadowBlur = 0;
+        
+        // Power-up type icon in center
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px Arial';
+        ctx.font = 'bold 16px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(box.health, box.x + box.width / 2, doorY + doorHeight - 4);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        let icon = '';
+        switch(box.type) {
+          case 'rapid': icon = '⚡'; break;
+          case 'spray': icon = '💥'; break;
+          case 'bullet': icon = '🔥'; break;
+          case 'shield': icon = '🛡️'; break;
+          case 'speed': icon = '🚀'; break;
+          case 'multi': icon = '🎯'; break;
+          case 'bomb': icon = '💣'; break;
+        }
+        
+        ctx.strokeText(icon, centerX, currentY + 3);
+        ctx.fillText(icon, centerX, currentY + 3);
+        
+        // Health display below asteroid
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px Arial';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.strokeText(box.health, centerX, currentY + radius + 15);
+        ctx.fillText(box.health, centerX, currentY + radius + 15);
+        
+        ctx.restore();
       });
 
       // Enhanced HUD with graphics and animations
