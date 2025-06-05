@@ -288,7 +288,7 @@
         case 'rapid': return permanentRapidLevel >= 10;
         case 'spray': return permanentSprayLevel >= 10;
         case 'bullet': return permanentBulletLevel >= 2;
-        case 'shield': return permanentShieldLevel >= 5;
+        case 'shield': return permanentShieldLevel >= 10;
         case 'speed': return permanentSpeedLevel >= 5;
         case 'multi': return permanentMultiLevel >= 3;
         default: return false;
@@ -457,7 +457,7 @@
               case 'shield': 
                 permanentShieldLevel = Math.max(2, permanentShieldLevel - 1);
                 // Adjust shield accordingly
-                playerShield = Math.max(playerShield - 5, permanentShieldLevel * 5);
+                playerShield = Math.max(playerShield - 2, permanentShieldLevel * 2);
                 break;
               case 'speed': 
                 permanentSpeedLevel = Math.max(2, permanentSpeedLevel - 1);
@@ -495,7 +495,7 @@
           break;
         case 'shield': 
           currentLevel = permanentShieldLevel; 
-          maxLevel = 5;
+          maxLevel = 10;
           break;
         case 'speed': 
           currentLevel = permanentSpeedLevel; 
@@ -544,7 +544,7 @@
       if (permanentBulletLevel > 2) permanentBulletLevel = Math.max(2, permanentBulletLevel - 1);
       if (permanentShieldLevel > 3) {
         permanentShieldLevel = Math.max(2, permanentShieldLevel - 1);
-        playerShield = Math.max(playerShield - 5, permanentShieldLevel * 5);
+        playerShield = Math.max(playerShield - 2, permanentShieldLevel * 2);
       }
       if (permanentSpeedLevel > 3) permanentSpeedLevel = Math.max(2, permanentSpeedLevel - 1);
       if (permanentMultiLevel > 2) permanentMultiLevel = Math.max(2, permanentMultiLevel - 1);
@@ -939,10 +939,10 @@
                   setPowerUpDecayInterval('bullet');
                 }
               } else if (box.type === "shield") {
-                if (1 + permanentShieldLevel < 5) {
+                if (1 + permanentShieldLevel < 10) {
                   permanentShieldLevel++;
                   hasShieldPowerUp = true;
-                  playerShield = Math.min(playerShield + 5, 10);
+                  playerShield = Math.min(playerShield + 2, permanentShieldLevel * 2);
                   powerUpDecayTimers.shield = Date.now();
                   setPowerUpDecayInterval('shield');
                 }
@@ -1040,7 +1040,7 @@
               // Slight permanent boost to all acquired power-ups
               if (hasRapidPowerUp && permanentRapidLevel < 10) permanentRapidLevel++;
               if (hasSprayPowerUp && permanentSprayLevel < 10) permanentSprayLevel++;
-              if (hasShieldPowerUp) playerShield += 10;
+              if (hasShieldPowerUp) playerShield += 4;
             }
             break;
           }
@@ -1143,13 +1143,37 @@
       ctx.fillStyle = '#00CED1';
       ctx.fillRect(player.x + player.width/2 - 8, player.y + 3, 16, 8);
 
-      // Shield visual effect
+      // Enhanced shield visual effect - ring around ship
       if (playerShield > 0) {
-        ctx.strokeStyle = `rgba(0, 255, 255, ${Math.min(playerShield / 20, 1)})`;
+        const shieldIntensity = Math.min(playerShield / 20, 1);
+        const shieldRadius = player.width/2 + 8 + (shieldIntensity * 5);
+        const shieldAlpha = 0.3 + (shieldIntensity * 0.5);
+        
+        // Multiple shield rings for enhanced effect
+        for (let i = 0; i < 3; i++) {
+          const ringRadius = shieldRadius - (i * 2);
+          const ringAlpha = shieldAlpha * (1 - i * 0.2);
+          
+          ctx.strokeStyle = `rgba(0, 255, 255, ${ringAlpha})`;
+          ctx.lineWidth = 4 - i;
+          ctx.shadowColor = '#00FFFF';
+          ctx.shadowBlur = 8 + (shieldIntensity * 12);
+          ctx.beginPath();
+          ctx.arc(player.x + player.width/2, player.y + player.height/2, ringRadius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        
+        // Reset shadow
+        ctx.shadowBlur = 0;
+        
+        // Shield number display above ship
+        ctx.fillStyle = '#00FFFF';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width/2 + 5, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.strokeText(playerShield, player.x + player.width/2, player.y - 15);
+        ctx.fillText(playerShield, player.x + player.width/2, player.y - 15);
       }
 
       ctx.restore();
@@ -1610,48 +1634,7 @@
         ctx.shadowBlur = 0;
       }
 
-      // Shield Display with Animated Bar
-      if (playerShield > 0) {
-        const shieldX = 15;
-        const shieldY = 125;
-
-        ctx.fillStyle = '#00FFFF';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText('SHIELD:', shieldX, shieldY);
-
-        // Shield bar
-        const shieldBarWidth = 100;
-        const shieldBarHeight = 10;
-        const shieldBarX = shieldX + 60;
-        const shieldBarY = shieldY - 8;
-        const shieldPercent = Math.min(playerShield / 50, 1);
-
-        // Background
-        ctx.fillStyle = 'rgba(50, 50, 50, 0.8)';
-        ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
-
-        // Shield fill with pulsing effect
-        const shieldPulse = Math.sin(Date.now() / 300) * 0.3 + 0.7;
-        const shieldGradient = ctx.createLinearGradient(shieldBarX, shieldBarY, shieldBarX + shieldBarWidth, shieldBarY);
-        shieldGradient.addColorStop(0, 'rgba(0, 255, 255, ' + shieldPulse + ')');
-        shieldGradient.addColorStop(1, 'rgba(0, 150, 255, ' + shieldPulse + ')');
-        ctx.fillStyle = shieldGradient;
-        ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth * shieldPercent, shieldBarHeight);
-
-        // Border and glow
-        ctx.shadowColor = '#00FFFF';
-        ctx.shadowBlur = 3;
-        ctx.strokeStyle = '#00FFFF';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
-        ctx.shadowBlur = 0;
-
-        // Shield value
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(playerShield, shieldBarX + shieldBarWidth + 15, shieldY - 2);
-      }
+      
 
       // Power-up Icons - Enhanced with Animations
       let powerUpX = 300;
@@ -1675,7 +1658,7 @@
       }
 
       if (hasShieldPowerUp) {
-        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#9932CC', '🛡️', 1 + permanentShieldLevel, 5, 'shield');
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#9932CC', '🛡️', 1 + permanentShieldLevel, 10, 'shield');
         powerUpX += spacing;
       }
 
