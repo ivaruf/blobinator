@@ -440,31 +440,31 @@
           case 'multi': currentLevel = permanentMultiLevel; break;
         }
 
-        // Only decay if above level 2
-        if (currentLevel > 2) {
+        // Only decay if above level 1
+        if (currentLevel > 1) {
           // Check if it's time to decay
           if (currentTime - powerUpDecayTimers[type] >= powerUpDecayIntervals[type]) {
             // Decay the power-up by 1 level
             switch(type) {
               case 'rapid': 
-                permanentRapidLevel = Math.max(2, permanentRapidLevel - 1);
+                permanentRapidLevel = Math.max(1, permanentRapidLevel - 1);
                 break;
               case 'spray': 
-                permanentSprayLevel = Math.max(2, permanentSprayLevel - 1);
+                permanentSprayLevel = Math.max(1, permanentSprayLevel - 1);
                 break;
               case 'bullet': 
-                permanentBulletLevel = Math.max(2, permanentBulletLevel - 1);
+                permanentBulletLevel = Math.max(1, permanentBulletLevel - 1);
                 break;
               case 'shield': 
-                permanentShieldLevel = Math.max(2, permanentShieldLevel - 1);
+                permanentShieldLevel = Math.max(1, permanentShieldLevel - 1);
                 // Adjust shield accordingly
                 playerShield = Math.max(playerShield - 2, permanentShieldLevel * 2);
                 break;
               case 'speed': 
-                permanentSpeedLevel = Math.max(2, permanentSpeedLevel - 1);
+                permanentSpeedLevel = Math.max(1, permanentSpeedLevel - 1);
                 break;
               case 'multi': 
-                permanentMultiLevel = Math.max(2, permanentMultiLevel - 1);
+                permanentMultiLevel = Math.max(1, permanentMultiLevel - 1);
                 break;
             }
 
@@ -508,12 +508,12 @@
           break;
       }
 
-      if (currentLevel <= 2) {
-        powerUpDecayIntervals[type] = 0; // No decay at level 2 or below
+      if (currentLevel <= 1) {
+        powerUpDecayIntervals[type] = 0; // No decay at level 1 or below
       } else {
         // Level-based decay speed - higher levels decay much faster
-        const levelFromMin = currentLevel - 2;
-        const maxLevelFromMin = maxLevel - 2;
+        const levelFromMin = currentLevel - 1;
+        const maxLevelFromMin = maxLevel - 1;
         const powerUpLevelMultiplier = Math.pow(0.2, levelFromMin / maxLevelFromMin); // Power-up level effect
         
         // Game level multiplier - dramatically faster decay at higher game levels
@@ -806,9 +806,9 @@
             if (permanentSprayLevel > 0) {
               const numBullets = 1 + permanentSprayLevel;
               if (numBullets === 1) {
-            bullets.push({
-              x: player.x + player.width / 2,
-              y: player.y,
+                bullets.push({
+                  x: player.x + player.width / 2,
+                  y: player.y,
               radius: 5,
               vx: 0,
               vy: -bulletSpeed,
@@ -1719,8 +1719,8 @@
           ctx.stroke();
         }
 
-        // Circular depletion indicator for levels > 2
-        if (level > 2 && decayProgress > 0) {
+        // Circular depletion indicator for levels > 1
+        if (level > 1 && decayProgress > 0) {
           const depletionRadius = radius + 6;
           const startAngle = -Math.PI / 2;
           const endAngle = startAngle + (2 * Math.PI * decayProgress);
