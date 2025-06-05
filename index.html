@@ -6,15 +6,22 @@
   <style>
     body { 
       margin: 0; 
+      padding: 0;
       overflow: hidden; 
       background: url('https://images.unsplash.com/photo-1502134249126-9f3755a50d78?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80') no-repeat center center fixed;
       background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
     canvas { 
       display: block; 
-      margin: 0 auto; 
-      background: rgba(0, 0, 0, 0.8);
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+      max-width: 100vw;
+      max-height: 100vh;
     }
     #startGameBtn, #tryAgainBtn {
       position: absolute;
@@ -77,15 +84,40 @@
     const mediumBtn = document.getElementById('mediumBtn');
     const hardBtn = document.getElementById('hardBtn');
 
-    // Set canvas size to window size
+    // Set canvas size optimized for mobile aspect ratio
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const aspectRatio = 9 / 16; // Mobile-friendly portrait ratio
+      const maxWidth = Math.min(window.innerWidth, 600); // Max width for desktop
+      const maxHeight = window.innerHeight;
+      
+      // Calculate dimensions based on aspect ratio
+      let canvasWidth, canvasHeight;
+      
+      if (maxWidth / maxHeight > aspectRatio) {
+        // Window is wider than target ratio - fit to height
+        canvasHeight = maxHeight;
+        canvasWidth = canvasHeight * aspectRatio;
+      } else {
+        // Window is taller than target ratio - fit to width
+        canvasWidth = maxWidth;
+        canvasHeight = canvasWidth / aspectRatio;
+      }
+      
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      
+      // Center the canvas on desktop
+      canvas.style.margin = '0 auto';
+      canvas.style.display = 'block';
     }
 
     // Initial resize and add event listener for window resize
     resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    resetPlayerPosition();
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      resetPlayerPosition();
+    });
 
     // Game state variables.
     let gameStarted = false;
@@ -175,9 +207,14 @@
 
 
     // Player setup.
+    function resetPlayerPosition() {
+      player.x = canvas.width / 2 - 25;
+      player.y = canvas.height - 80; // Moved higher for mobile visibility
+    }
+    
     const player = {
-      x: canvas.width / 2 - 25,
-      y: canvas.height - 80, // Moved higher for mobile visibility
+      x: 0,
+      y: 0,
       width: 50,
       height: 20,
       color: 'white'
@@ -662,6 +699,7 @@
       temporaryBoosts.clear();
 
       spawnBoxes();
+      resetPlayerPosition();
       startTime = Date.now();
     }
 
