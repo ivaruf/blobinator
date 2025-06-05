@@ -528,7 +528,7 @@
 
       // Reset level system
       currentLevel = 1;
-      nextLevelScore = getNextLevelScore(1); // Use progressive scaling from start
+      nextLevelScore = getNextLevelScore(2); // Score needed to reach level 2
       levelUpDisplay = 0;
       levelUpWaveTimer = 0;
       baseEnemyHealth = 1;
@@ -861,7 +861,7 @@
       }
 
       // Check for level up - only if boss is defeated and score reached
-      if (score >= getNextLevelScore(currentLevel) && bossDefeatedThisLevel) {
+      if (score >= getNextLevelScore(currentLevel + 1) && bossDefeatedThisLevel) {
         levelUp();
       }
 
@@ -1406,8 +1406,8 @@
       ctx.fillText(difficulty.toUpperCase(), diffX + 15, scoreY - 1);
 
       // Level Display with Progress Bar
-      const currentLevelThreshold = getNextLevelScore(currentLevel - 1);
-      const nextLevelThreshold = getNextLevelScore(currentLevel);
+      const currentLevelThreshold = currentLevel === 1 ? 0 : getNextLevelScore(currentLevel);
+      const nextLevelThreshold = getNextLevelScore(currentLevel + 1);
       const pointsInLevel = score - currentLevelThreshold;
       const pointsNeeded = nextLevelThreshold - currentLevelThreshold;
       const levelProgress = Math.min(pointsInLevel / pointsNeeded, 1);
