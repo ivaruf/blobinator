@@ -613,7 +613,7 @@
       powerUpDecayIntervals = {
         rapid: 0,
         spray: 0,
-        bullet: 0,
+        bullet: currentTime,
         shield: currentTime,
         speed: currentTime,
         multi: currentTime
@@ -795,8 +795,7 @@
         for (let wave = 0; wave < waveCount; wave++) {
           setTimeout(() => {
             if (permanentSprayLevel > 0) {
-          const numBullets = 1 + permanentSprayLevel;
-          if (numBullets === 1) {
+          const numBullets = 1 + permanentSprayLevel;          if (numBullets === 1) {
             bullets.push({
               x: player.x + player.width / 2,
               y: player.y,
@@ -1149,12 +1148,12 @@
         const shieldIntensity = Math.min(playerShield / 20, 1);
         const shieldRadius = player.width/2 + 8 + (shieldIntensity * 5);
         const shieldAlpha = 0.3 + (shieldIntensity * 0.5);
-        
+
         // Multiple shield rings for enhanced effect
         for (let i = 0; i < 3; i++) {
           const ringRadius = shieldRadius - (i * 2);
           const ringAlpha = shieldAlpha * (1 - i * 0.2);
-          
+
           ctx.strokeStyle = `rgba(0, 255, 255, ${ringAlpha})`;
           ctx.lineWidth = 4 - i;
           ctx.shadowColor = '#00FFFF';
@@ -1163,10 +1162,10 @@
           ctx.arc(player.x + player.width/2, player.y + player.height/2, ringRadius, 0, Math.PI * 2);
           ctx.stroke();
         }
-        
+
         // Reset shadow
         ctx.shadowBlur = 0;
-        
+
         // Shield number display above ship
         ctx.fillStyle = '#00FFFF';
         ctx.font = 'bold 16px Arial';
@@ -1583,12 +1582,8 @@
       ctx.strokeRect(barX, barY, barWidth, barHeight);
 
       // Bombs Display - classic icons stacked vertically on right side
-      const bombX = canvas.width - 50;
-      const bombStartY = 50;
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('BOMBS', bombX, bombStartY - 10);
+      const bombX = canvas.width - 30;
+      const bombStartY = 30;
 
       for (let i = 0; i < Math.min(bombCount, 10); i++) {
         const bx = bombX;
@@ -1629,7 +1624,7 @@
         ctx.stroke();
       }
 
-      
+
 
       // Power-up Icons - Enhanced with Animations
       let powerUpX = 300;
