@@ -107,6 +107,7 @@
     let currentLevel = 1;
     let nextLevelScore = 5000;
     let levelUpDisplay = 0; // Timer for level up display
+    let levelUpWaveTimer = 0; // Timer for level up wave effect
     let baseEnemyHealth = 1;
     let baseEnemySpeed = 1;
     let bossDefeatedThisLevel = true; // Start true so first level can progress
@@ -194,14 +195,14 @@
       const clusterCenterX = Math.random() * (canvas.width - 100) + 50;
       const spread = 50;
       
-      // Level-based enemy scaling
-      const levelHealthBonus = Math.floor((currentLevel - 1) * diffSettings.levelHealthIncrease);
+      // Level-based enemy scaling - more aggressive health increase
+      const levelHealthBonus = Math.floor((currentLevel - 1) * diffSettings.levelHealthIncrease * 2);
       const levelSpeedBonus = (currentLevel - 1) * diffSettings.levelSpeedIncrease;
       
       for (let i = 0; i < count; i++) {
         const offsetX = (Math.random() - 0.5) * spread;
         const offsetY = (Math.random() - 0.5) * spread;
-        const baseHealth = Math.floor(Math.random() * 3) + baseEnemyHealth;
+        const baseHealth = Math.floor(Math.random() * 2) + baseEnemyHealth + currentLevel;
         const health = baseHealth + levelHealthBonus;
 
         // 20% chance to spawn a spinning pulsating enemy
@@ -266,31 +267,63 @@
     function spawnRandomBox(isInitial = false) {
       const rand = Math.random();
       let type;
-      if(rand < 0.002) {
+      
+      // Level-based power-up availability
+      const availablePowerUps = ['rapid']; // Always available
+      
+      if (currentLevel >= 1) {
+        availablePowerUps.push('spray');
+      }
+      if (currentLevel >= 2) {
+        availablePowerUps.push('bullet', 'shield');
+      }
+      if (currentLevel >= 3) {
+        availablePowerUps.push('speed');
+      }
+      if (currentLevel >= 4) {
+        availablePowerUps.push('multi');
+      }
+      if (currentLevel >= 5) {
+        availablePowerUps.push('bomb');
+      }
+      
+      // Select random type from available power-ups
+      if (availablePowerUps.includes('bomb') && rand < 0.002) {
         type = "bomb";
-      } else if(rand < 0.005) {
+      } else if (availablePowerUps.includes('bullet') && rand < 0.01) {
         type = "bullet";
-      } else if(rand < 0.02) {
+      } else if (availablePowerUps.includes('shield') && rand < 0.03) {
         type = "shield";
-      } else if(rand < 0.04) {
+      } else if (availablePowerUps.includes('speed') && rand < 0.05) {
         type = "speed";
-      } else if(rand < 0.06) {
+      } else if (availablePowerUps.includes('multi') && rand < 0.07) {
         type = "multi";
-      } else if(rand < 0.15) {
+      } else if (availablePowerUps.includes('spray') && rand < 0.4) {
         type = "spray";
       } else {
         type = "rapid";
       }
+      
       spawnBoxForType(type, isInitial);
     }
 
     function spawnBoxes() {
+      // Always spawn rapid fire
       spawnBoxForType("rapid", true);
-      spawnBoxForType("spray", true);
-      spawnBoxForType("bullet", true);
-      spawnBoxForType("shield", true);
-      spawnBoxForType("speed", true);
-      spawnBoxForType("multi", true);
+      
+      // Spawn one random available power-up for level 1
+      if (currentLevel === 1) {
+        spawnBoxForType("spray", true);
+      } else {
+        // For higher levels, spawn based on availability
+        if (currentLevel >= 1) spawnBoxForType("spray", true);
+        if (currentLevel >= 2) {
+          spawnBoxForType("bullet", true);
+          spawnBoxForType("shield", true);
+        }
+        if (currentLevel >= 3) spawnBoxForType("speed", true);
+        if (currentLevel >= 4) spawnBoxForType("multi", true);
+      }
     }
     // Initial box spawn.
     spawnBoxes();
@@ -315,24 +348,61 @@
 
     // Calculate progressive level score requirements
     function getNextLevelScore(level) {
-      // Start frequent, then exponential scaling: 1000, 2500, 4500, 7000, 10000, 13500, etc.
-      if (level <= 3) {
-        return level * 1000 + (level - 1) * 500; // 1000, 2500, 4500
+      // Level 1: 0, Level 2: 3000, Level 3: 7000, Level 4: 15000, Level 5: 25000
+      const scores = [0, 3000, 7000, 15000, 25000];
+      if (level <= 5) {
+        return scores[level - 1];
       } else {
-        return 4500 + (level - 3) * 2500; // 7000, 9500, 12000, etc.
+        // For higher levels, continue exponential growth
+        return 25000 + (level - 5) * 20000;
       }
     }
+    
+    // Level-up wave attack function
+    function triggerLevelUpWave() {
+      // Visual wave effect will be handled in draw function
+      const waveStartTime = Date.now();
+      
+      // Damage all enemies on screen
+      for (let i = blobs.length - 1; i >= 0; i--) {
+        blobs[i].health -= 1000;
+        if (blobs[i].health <= 0) {
+          score += 10; // Bonus points for wave kills
+          blobs.splice(i, 1);
+        }
+      }
+      
+      // Damage boss if present
+      if (boss) {
+        boss.health -= 1000;
+        if (boss.health <= 0) {
+          boss = null;
+          bossDefeatedThisLevel = true;
+          score += 500;
+        }
+      }
+      
+      // Set wave animation timer
+      levelUpWaveTimer = 60; // 1 second at 60 FPS
+    }
 
-    // Level up function - clears enemies and power-ups, increases difficulty
+    // Level up function - triggers wave attack, then clears remaining enemies and power-ups
     function levelUp() {
       currentLevel++;
       levelUpDisplay = 180; // Display "Level X" for 3 seconds at 60 FPS
       
-      // Clear all enemies and power-ups
-      blobs = [];
-      boxes = [];
-      boss = null;
-      bossDefeatedThisLevel = true; // Reset boss defeat status for new level
+      // Trigger level-up wave attack before clearing
+      triggerLevelUpWave();
+      
+      // Clear remaining enemies and power-ups after wave
+      setTimeout(() => {
+        blobs = [];
+        boxes = [];
+        if (boss && boss.health <= 0) {
+          boss = null;
+        }
+        bossDefeatedThisLevel = true; // Reset boss defeat status for new level
+      }, 1000);
       
       // Identify maxed out power-ups
       const maxedRapid = permanentRapidLevel >= 10;
@@ -460,6 +530,7 @@
       currentLevel = 1;
       nextLevelScore = getNextLevelScore(1); // Use progressive scaling from start
       levelUpDisplay = 0;
+      levelUpWaveTimer = 0;
       baseEnemyHealth = 1;
       baseEnemySpeed = 1;
       bossDefeatedThisLevel = true;
@@ -1066,6 +1137,15 @@
           ctx.strokeStyle = "orange";
           ctx.lineWidth = 4;
           ctx.stroke();
+          
+          // HP text display
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 14px Arial';
+          ctx.textAlign = 'center';
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 2;
+          ctx.strokeText(blob.health, blob.x, blob.y + 6);
+          ctx.fillText(blob.health, blob.x, blob.y + 6);
         } else {
           // Draw regular blob with texture patterns
           ctx.save();
@@ -1148,6 +1228,15 @@
           ctx.strokeStyle = "lime";
           ctx.lineWidth = 3;
           ctx.stroke();
+          
+          // HP text display
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 12px Arial';
+          ctx.textAlign = 'center';
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 2;
+          ctx.strokeText(blob.health, blob.x, blob.y + 4);
+          ctx.fillText(blob.health, blob.x, blob.y + 4);
         }
       });
 
@@ -1513,6 +1602,35 @@
       }
 
       ctx.restore();
+
+      // Level-up wave effect
+      if (levelUpWaveTimer > 0) {
+        ctx.save();
+        const waveProgress = (60 - levelUpWaveTimer) / 60;
+        const waveRadius = waveProgress * Math.max(canvas.width, canvas.height) * 1.5;
+        const waveAlpha = 1 - waveProgress;
+        
+        // Draw expanding wave from player position
+        ctx.globalAlpha = waveAlpha;
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 8;
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 20;
+        
+        ctx.beginPath();
+        ctx.arc(player.x + player.width/2, player.y + player.height/2, waveRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Secondary wave for more dramatic effect
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(player.x + player.width/2, player.y + player.height/2, waveRadius * 0.8, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        ctx.restore();
+        levelUpWaveTimer--;
+      }
 
       // Level Up Display
       if (levelUpDisplay > 0) {
