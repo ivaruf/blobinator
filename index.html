@@ -320,7 +320,7 @@
       }
 
       // Select random type from available power-ups
-      if (availablePowerUps.includes('bomb') && rand < 0.002) {
+      if (availablePowerUps.includes('bomb') && rand < 0.008) {
         type = "bomb";
       } else if (availablePowerUps.includes('bullet') && rand < 0.01) {
         type = "bullet";
@@ -1582,57 +1582,51 @@
       ctx.lineWidth = 1;
       ctx.strokeRect(barX, barY, barWidth, barHeight);
 
-      // Bombs Display with Graphics - moved to top right
-      const bombX = canvas.width - 100;
-      const bombY = 30;
+      // Bombs Display - classic icons stacked vertically on right side
+      const bombX = canvas.width - 50;
+      const bombStartY = 50;
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px Arial';
-      ctx.fillText('BOMBS:', bombX, bombY);
+      ctx.textAlign = 'center';
+      ctx.fillText('BOMBS', bombX, bombStartY - 10);
 
       for (let i = 0; i < Math.min(bombCount, 10); i++) {
-        const bx = bombX + 60 + i * 25;
-        const by = bombY - 12;
+        const bx = bombX;
+        const by = bombStartY + i * 30;
 
-        // Enhanced bomb with multiple layers
-        const bombGlow = Math.sin(Date.now() / 150 + i) * 0.3 + 0.7;
-
-        // Outer glow
-        ctx.shadowColor = '#FF4500';
-        ctx.shadowBlur = 10 * bombGlow;
-
-        // Main bomb body - larger and more detailed
-        const bombGradient = ctx.createRadialGradient(bx-2, by-2, 0, bx, by, 10);
-        bombGradient.addColorStop(0, '#FFFFFF');
-        bombGradient.addColorStop(0.2, '#FF6B6B');
-        bombGradient.addColorStop(0.6, '#8B0000');
-        bombGradient.addColorStop(1, '#2B0000');
-        ctx.fillStyle = bombGradient;
+        // Classic bomb icon - simple and clean
+        // Main bomb body (black circle)
+        ctx.fillStyle = '#2B2B2B';
         ctx.beginPath();
-        ctx.arc(bx, by, 8, 0, Math.PI * 2);
+        ctx.arc(bx, by, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        // Metallic shine
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        // White highlight
+        ctx.fillStyle = '#FFFFFF';
         ctx.beginPath();
-        ctx.arc(bx - 3, by - 3, 3, 0, Math.PI * 2);
+        ctx.arc(bx - 4, by - 4, 3, 0, Math.PI * 2);
         ctx.fill();
 
-        // Enhanced fuse with spark effect
+        // Simple fuse (yellow line)
         ctx.strokeStyle = '#FFD700';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(bx - 5, by - 5);
-        ctx.lineTo(bx - 10, by - 10);
+        ctx.moveTo(bx - 8, by - 8);
+        ctx.lineTo(bx - 15, by - 15);
         ctx.stroke();
 
-        // Spark at fuse tip
-        const sparkGlow = Math.sin(Date.now() / 100 + i * 2) * 0.5 + 0.5;
-        ctx.fillStyle = `rgba(255, 215, 0, ${sparkGlow})`;
+        // Fuse tip (small yellow circle)
+        ctx.fillStyle = '#FFD700';
         ctx.beginPath();
-        ctx.arc(bx - 10, by - 10, 2, 0, Math.PI * 2);
+        ctx.arc(bx - 15, by - 15, 2, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.shadowBlur = 0;
+        // Border outline for clarity
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(bx, by, 12, 0, Math.PI * 2);
+        ctx.stroke();
       }
 
       
