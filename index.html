@@ -152,7 +152,8 @@
       // Example: Unlock Shield at 20 skill points
       if (skillPoints >= 20 && !hasShieldPowerUp) {
         hasShieldPowerUp = true;
-        playerShield += 15;
+        permanentShieldLevel = 1;
+        playerShield += 2; // Same as regular shield power-up
         // Display a message to the player!
         console.log("Shield UNLOCKED!");
       }
