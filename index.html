@@ -84,29 +84,15 @@
     const mediumBtn = document.getElementById('mediumBtn');
     const hardBtn = document.getElementById('hardBtn');
 
-    // Set canvas size optimized for mobile aspect ratio
+    // Set canvas size to full screen with max width
     function resizeCanvas() {
-      const aspectRatio = 9 / 16; // Mobile-friendly portrait ratio
-      const maxWidth = Math.min(window.innerWidth, 600); // Max width for desktop
+      const maxWidth = Math.min(window.innerWidth, 1080); // Max width of 1080px
       const maxHeight = window.innerHeight;
       
-      // Calculate dimensions based on aspect ratio
-      let canvasWidth, canvasHeight;
+      canvas.width = maxWidth;
+      canvas.height = maxHeight;
       
-      if (maxWidth / maxHeight > aspectRatio) {
-        // Window is wider than target ratio - fit to height
-        canvasHeight = maxHeight;
-        canvasWidth = canvasHeight * aspectRatio;
-      } else {
-        // Window is taller than target ratio - fit to width
-        canvasWidth = maxWidth;
-        canvasHeight = canvasWidth / aspectRatio;
-      }
-      
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-      
-      // Center the canvas on desktop
+      // Center the canvas if it's smaller than viewport width
       canvas.style.margin = '0 auto';
       canvas.style.display = 'block';
     }
