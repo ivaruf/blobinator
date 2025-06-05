@@ -396,7 +396,7 @@ function drawBoxes() {
     // Safety checks before calling drawPowerUpIcon
     const safeX = isFinite(centerX) ? centerX : canvas.width / 2;
     const safeY = isFinite(currentY) ? currentY : canvas.height / 2;
-    drawPowerUpIcon(safeX, safeY, box.type);
+    drawPowerUpIconSimple(safeX, safeY, box.type);
     drawBoxHealth(centerX, currentY, radius, box.health);
     
     ctx.restore();
@@ -435,7 +435,7 @@ function drawAsteroidDetails(centerX, currentY, radius) {
   }
 }
 
-function drawPowerUpIcon(centerX, currentY, type) {
+function drawPowerUpIconSimple(centerX, currentY, type) {
   // Safety checks for finite values
   const safeX = isFinite(centerX) ? centerX : canvas.width / 2;
   const safeY = isFinite(currentY) ? currentY : canvas.height / 2;
