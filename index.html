@@ -308,21 +308,26 @@
     }
 
     function spawnBoxes() {
+      // Clear existing boxes first to prevent overflow
+      boxes = [];
+      
       // Always spawn rapid fire
       spawnBoxForType("rapid", true);
       
       // Always spawn spray since it's available from level 1
       spawnBoxForType("spray", true);
       
-      // Spawn additional power-ups based on level
-      if (currentLevel >= 2) {
+      // Spawn additional power-ups based on level (max 5 total)
+      if (currentLevel >= 2 && boxes.length < 5) {
         spawnBoxForType("bullet", true);
-        spawnBoxForType("shield", true);
+        if (boxes.length < 5) {
+          spawnBoxForType("shield", true);
+        }
       }
-      if (currentLevel >= 3) {
+      if (currentLevel >= 3 && boxes.length < 5) {
         spawnBoxForType("speed", true);
       }
-      if (currentLevel >= 4) {
+      if (currentLevel >= 4 && boxes.length < 5) {
         spawnBoxForType("multi", true);
       }
     }
@@ -853,7 +858,10 @@
                 bombCount = Math.min(bombCount + 1, 10);
               }
               boxes.splice(i, 1);
-              spawnRandomBox();
+              // Only spawn new power-up if we have fewer than 5 on screen
+              if (boxes.length < 5) {
+                spawnRandomBox();
+              }
             }
             break;
           }
