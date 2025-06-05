@@ -17,18 +17,17 @@ function drawHUD() {
 function drawScore() {
   const scoreX = 15 * mobileScale;
   const scoreY = 30 * mobileScale;
-  const scoreGlow = Math.sin(Date.now() / 300) * 0.3 + 0.7;
 
   ctx.shadowColor = '#00FFFF';
-  ctx.shadowBlur = 10 * scoreGlow * mobileScale;
-  ctx.fillStyle = `rgba(255, 255, 255, ${scoreGlow})`;
+  ctx.shadowBlur = 10 * mobileScale;
+  ctx.fillStyle = 'rgba(255, 255, 255, 1)';
   ctx.font = `bold ${32 * mobileScale}px Arial`;
   ctx.textAlign = 'left';
   ctx.fillText('SCORE', scoreX, scoreY);
 
   ctx.shadowBlur = 5 * mobileScale;
   ctx.fillStyle = '#FFD700';
-  ctx.font = `bold ${28 * mobileScale}px Arial`;
+  ctx.font = `bold ${42 * mobileScale}px Arial`;
   ctx.fillText(score.toLocaleString(), scoreX, scoreY + 25 * mobileScale);
   ctx.shadowBlur = 0;
 }
