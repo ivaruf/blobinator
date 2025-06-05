@@ -161,14 +161,26 @@ function drawPowerUpIcon(x, y, size, color, emoji, level, maxLevel, powerUpType)
   const decayProgress = level > 2 && powerUpDecayIntervals[powerUpType] > 0 && powerUpType !== 'shield' ? 
     1 - (timeUntilDecay / powerUpDecayIntervals[powerUpType]) : 0;
 
-  const radius = size / 2;
+  // Safety checks for finite values
+  const safeSize = isFinite(size) ? Math.max(size, 1) : 35;
+  const safeX = isFinite(x) ? x : canvas.width / 2;
+  const safeY = isFinite(y) ? y : canvas.height / 2;
+  const radius = safeSize / 2;
   const vertices = 8;
   const irregularity = 0.3;
 
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(safeX, safeY);
 
-  const asteroidGradient = ctx.createRadialGradient(-radius*0.3, -radius*0.3, 0, 0, 0, radius);
+  // Ensure all gradient parameters are finite
+  const x1 = isFinite(-radius * 0.3) ? -radius * 0.3 : -10;
+  const y1 = isFinite(-radius * 0.3) ? -radius * 0.3 : -10;
+  const r1 = 0;
+  const x2 = 0;
+  const y2 = 0;
+  const r2 = isFinite(radius) ? Math.max(radius, 1) : 17;
+
+  const asteroidGradient = ctx.createRadialGradient(x1, y1, r1, x2, y2, r2);
   asteroidGradient.addColorStop(0, 'rgba(200, 200, 200, 0.9)');
   asteroidGradient.addColorStop(0.3, color);
   asteroidGradient.addColorStop(0.7, 'rgba(80, 80, 80, 0.8)');

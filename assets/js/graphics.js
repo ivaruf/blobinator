@@ -392,7 +392,11 @@ function drawBoxes() {
     ctx.fill();
     
     drawAsteroidDetails(centerX, currentY, radius);
-    drawPowerUpIcon(centerX, currentY, box.type);
+    
+    // Safety checks before calling drawPowerUpIcon
+    const safeX = isFinite(centerX) ? centerX : canvas.width / 2;
+    const safeY = isFinite(currentY) ? currentY : canvas.height / 2;
+    drawPowerUpIcon(safeX, safeY, box.type);
     drawBoxHealth(centerX, currentY, radius, box.health);
     
     ctx.restore();
@@ -432,6 +436,10 @@ function drawAsteroidDetails(centerX, currentY, radius) {
 }
 
 function drawPowerUpIcon(centerX, currentY, type) {
+  // Safety checks for finite values
+  const safeX = isFinite(centerX) ? centerX : canvas.width / 2;
+  const safeY = isFinite(currentY) ? currentY : canvas.height / 2;
+  
   ctx.fillStyle = 'white';
   ctx.font = 'bold 16px Arial';
   ctx.textAlign = 'center';
@@ -444,8 +452,8 @@ function drawPowerUpIcon(centerX, currentY, type) {
   };
   
   const icon = iconMap[type] || '?';
-  ctx.strokeText(icon, centerX, currentY + 3);
-  ctx.fillText(icon, centerX, currentY + 3);
+  ctx.strokeText(icon, safeX, safeY + 3);
+  ctx.fillText(icon, safeX, safeY + 3);
 }
 
 function drawBoxHealth(centerX, currentY, radius, health) {
