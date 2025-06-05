@@ -282,6 +282,19 @@
       boxes.push(newBox);
     }
 
+    // Helper function to check if a power-up type would be at max level
+    function checkIfMaxLevel(type) {
+      switch(type) {
+        case 'rapid': return permanentRapidLevel >= 10;
+        case 'spray': return permanentSprayLevel >= 10;
+        case 'bullet': return permanentBulletLevel >= 2;
+        case 'shield': return permanentShieldLevel >= 5;
+        case 'speed': return permanentSpeedLevel >= 5;
+        case 'multi': return permanentMultiLevel >= 3;
+        default: return false;
+      }
+    }
+
     function spawnRandomBox(isInitial = false) {
       const rand = Math.random();
       let type;
@@ -497,12 +510,13 @@
       if (currentLevel <= 2) {
         powerUpDecayIntervals[type] = 0; // No decay at level 2 or below
       } else {
-        // Calculate decay interval: max level = 20 seconds, scales down from there
-        // Higher levels decay faster
-        const levelProgress = (currentLevel - 2) / (maxLevel - 2);
-        const minInterval = 20000; // 20 seconds for max level
-        const maxInterval = 60000; // 60 seconds for level 3
-        powerUpDecayIntervals[type] = maxInterval - (levelProgress * (maxInterval - minInterval));
+        // Much faster decay at higher levels - exponential decay curve
+        const levelFromMin = currentLevel - 2;
+        const maxLevelFromMin = maxLevel - 2;
+        const decayMultiplier = Math.pow(0.4, levelFromMin / maxLevelFromMin); // Exponential curve
+        const minInterval = 8000; // 8 seconds for max level
+        const maxInterval = 45000; // 45 seconds for level 3
+        powerUpDecayIntervals[type] = minInterval + (maxInterval - minInterval) * decayMultiplier;
       }
     }
 
@@ -947,7 +961,18 @@
               boxes.splice(i, 1);
               // Only spawn new power-up if we have fewer than 5 on screen
               if (boxes.length < 5) {
-                spawnRandomBox();
+                // Check if the spawned power-up would be at max level
+                const wouldBeMaxLevel = checkIfMaxLevel(box.type);
+                if (wouldBeMaxLevel) {
+                  // Don't spawn immediately, schedule a retry in 3 seconds
+                  setTimeout(() => {
+                    if (boxes.length < 5) {
+                      spawnRandomBox();
+                    }
+                  }, 3000);
+                } else {
+                  spawnRandomBox();
+                }
               }
             }
             break;
@@ -1449,8 +1474,8 @@
       const hudWidth = 280;
       const hudHeight = 140;
       const hudGradient = ctx.createLinearGradient(0, 0, hudWidth, hudHeight);
-      hudGradient.addColorStop(0, 'rgba(0, 20, 40, 0.9)');
-      hudGradient.addColorStop(1, 'rgba(0, 10, 20, 0.9)');
+      hudGradient.addColorStop(0, 'rgba(0, 20, 40, 0.4)');
+      hudGradient.addColorStop(1, 'rgba(0, 10, 20, 0.4)');
 
       ctx.fillStyle = hudGradient;
       ctx.fillRect(5, 5, hudWidth, hudHeight);
@@ -1537,37 +1562,56 @@
       ctx.lineWidth = 1;
       ctx.strokeRect(barX, barY, barWidth, barHeight);
 
-      // Bombs Display with Graphics
-      const bombX = 15;
+      // Bombs Display with Graphics - moved down to avoid score overlap
+      const bombX = 300;
       const bombY = 100;
       ctx.fillStyle = 'white';
       ctx.font = 'bold 14px Arial';
       ctx.fillText('BOMBS:', bombX, bombY);
 
       for (let i = 0; i < Math.min(bombCount, 10); i++) {
-        const bx = bombX + 60 + i * 20;
-        const by = bombY - 10;
+        const bx = bombX + 60 + i * 25;
+        const by = bombY - 12;
 
-        // Bomb icon with glow effect
-        const bombGlow = Math.sin(Date.now() / 200 + i) * 0.2 + 0.8;
+        // Enhanced bomb with multiple layers
+        const bombGlow = Math.sin(Date.now() / 150 + i) * 0.3 + 0.7;
+        
+        // Outer glow
         ctx.shadowColor = '#FF4500';
-        ctx.shadowBlur = 5 * bombGlow;
-
-        const bombGradient = ctx.createRadialGradient(bx, by, 0, bx, by, 8);
-        bombGradient.addColorStop(0, '#FF6B6B');
-        bombGradient.addColorStop(1, '#8B0000');
+        ctx.shadowBlur = 10 * bombGlow;
+        
+        // Main bomb body - larger and more detailed
+        const bombGradient = ctx.createRadialGradient(bx-2, by-2, 0, bx, by, 10);
+        bombGradient.addColorStop(0, '#FFFFFF');
+        bombGradient.addColorStop(0.2, '#FF6B6B');
+        bombGradient.addColorStop(0.6, '#8B0000');
+        bombGradient.addColorStop(1, '#2B0000');
         ctx.fillStyle = bombGradient;
         ctx.beginPath();
-        ctx.arc(bx, by, 6, 0, Math.PI * 2);
+        ctx.arc(bx, by, 8, 0, Math.PI * 2);
         ctx.fill();
 
-        // Fuse
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 2;
+        // Metallic shine
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.beginPath();
-        ctx.moveTo(bx - 4, by - 4);
-        ctx.lineTo(bx - 8, by - 8);
+        ctx.arc(bx - 3, by - 3, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Enhanced fuse with spark effect
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(bx - 5, by - 5);
+        ctx.lineTo(bx - 10, by - 10);
         ctx.stroke();
+
+        // Spark at fuse tip
+        const sparkGlow = Math.sin(Date.now() / 100 + i * 2) * 0.5 + 0.5;
+        ctx.fillStyle = `rgba(255, 215, 0, ${sparkGlow})`;
+        ctx.beginPath();
+        ctx.arc(bx - 10, by - 10, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
         ctx.shadowBlur = 0;
       }
 
@@ -1650,77 +1694,119 @@
         powerUpX += spacing;
       }
 
-      // Helper function for animated power-up icons with decay warning
+      // Helper function for asteroid-style power-up icons with circular depletion indicator
       function drawPowerUpIcon(x, y, size, color, emoji, level, maxLevel, powerUpType) {
-        // Check if power-up is about to decay (within 5 seconds)
         const currentTime = Date.now();
         const timeUntilDecay = powerUpDecayIntervals[powerUpType] - (currentTime - powerUpDecayTimers[powerUpType]);
-        const isAboutToDecay = level > 2 && timeUntilDecay > 0 && timeUntilDecay < 5000;
+        const decayProgress = level > 2 && powerUpDecayIntervals[powerUpType] > 0 ? 
+          1 - (timeUntilDecay / powerUpDecayIntervals[powerUpType]) : 0;
+
+        // Asteroid-style irregular shape
+        const radius = size / 2;
+        const vertices = 8;
+        const irregularity = 0.3;
         
-        // Enhanced pulsating for high levels about to decay
-        let pulse;
-        if (isAboutToDecay) {
-          pulse = Math.sin(Date.now() / 150) * 0.3 + 0.7; // Faster, more dramatic pulse
-        } else {
-          pulse = Math.sin(Date.now() / 400) * 0.1 + 0.9; // Normal pulse
-        }
-        const currentSize = size * pulse;
+        // Create irregular asteroid shape
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Main asteroid body with rocky texture
+        const asteroidGradient = ctx.createRadialGradient(-radius*0.3, -radius*0.3, 0, 0, 0, radius);
+        asteroidGradient.addColorStop(0, 'rgba(200, 200, 200, 0.9)');
+        asteroidGradient.addColorStop(0.3, color);
+        asteroidGradient.addColorStop(0.7, 'rgba(80, 80, 80, 0.8)');
+        asteroidGradient.addColorStop(1, 'rgba(40, 40, 40, 0.9)');
 
-        // Background circle with gradient
-        const iconGradient = ctx.createRadialGradient(x, y, 0, x, y, currentSize/2);
-        if (isAboutToDecay) {
-          // Warning colors when about to decay
-          iconGradient.addColorStop(0, '#FF6B6B');
-          iconGradient.addColorStop(0.5, color);
-          iconGradient.addColorStop(1, 'rgba(255, 0, 0, 0.7)');
-        } else {
-          iconGradient.addColorStop(0, color);
-          iconGradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
-        }
-
-        ctx.fillStyle = iconGradient;
+        ctx.fillStyle = asteroidGradient;
         ctx.beginPath();
-        ctx.arc(x, y, currentSize/2, 0, Math.PI * 2);
+        for (let i = 0; i < vertices; i++) {
+          const angle = (i / vertices) * Math.PI * 2;
+          const variation = (Math.sin(angle * 3 + Date.now() / 2000) * irregularity + 1);
+          const r = radius * variation;
+          const px = Math.cos(angle) * r;
+          const py = Math.sin(angle) * r;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
         ctx.fill();
 
-        // Border with glow
-        ctx.shadowColor = isAboutToDecay ? '#FF4500' : color;
-        ctx.shadowBlur = isAboutToDecay ? 15 : 8;
-        ctx.strokeStyle = isAboutToDecay ? '#FF4500' : color;
-        ctx.lineWidth = isAboutToDecay ? 3 : 2;
+        // Add rocky surface details
+        ctx.strokeStyle = 'rgba(120, 120, 120, 0.7)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const angle = (i / 4) * Math.PI * 2;
+          const startR = radius * 0.4;
+          const endR = radius * 0.8;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * startR, Math.sin(angle) * startR);
+          ctx.lineTo(Math.cos(angle) * endR, Math.sin(angle) * endR);
+          ctx.stroke();
+        }
+
+        // Circular depletion indicator for levels > 2
+        if (level > 2 && decayProgress > 0) {
+          const depletionRadius = radius + 6;
+          const startAngle = -Math.PI / 2;
+          const endAngle = startAngle + (2 * Math.PI * decayProgress);
+          
+          // Background circle
+          ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(0, 0, depletionRadius, 0, Math.PI * 2);
+          ctx.stroke();
+          
+          // Depletion arc - changes color as it depletes
+          const depletionColor = decayProgress > 0.7 ? '#FF4500' : decayProgress > 0.4 ? '#FFD700' : '#00FF00';
+          ctx.strokeStyle = depletionColor;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(0, 0, depletionRadius, startAngle, endAngle);
+          ctx.stroke();
+        }
+
+        // Glow effect around asteroid
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Icon text/emoji
+        // Icon symbol in center
         ctx.fillStyle = 'white';
-        ctx.font = `${currentSize * 0.4}px Arial`;
+        ctx.font = `${radius * 0.8}px Arial`;
         ctx.textAlign = 'center';
-        ctx.fillText(emoji, x, y + currentSize * 0.1);
+        ctx.fillText(emoji, 0, radius * 0.2);
 
-        // Level indicator with decay warning
-        ctx.fillStyle = isAboutToDecay ? '#FF4500' : '#FFD700';
+        ctx.restore();
+
+        // Level indicator below
+        ctx.fillStyle = '#FFD700';
         ctx.font = 'bold 12px Arial';
-        ctx.fillText(level, x, y + currentSize/2 + 15);
-
-        // Decay timer display for levels > 2
-        if (level > 2 && timeUntilDecay > 0) {
-          const secondsLeft = Math.ceil(timeUntilDecay / 1000);
-          ctx.fillStyle = isAboutToDecay ? '#FF0000' : '#FFFFFF';
-          ctx.font = 'bold 10px Arial';
-          ctx.fillText(`${secondsLeft}s`, x, y + currentSize/2 + 30);
-        }
+        ctx.textAlign = 'center';
+        ctx.fillText(level, x, y + radius + 20);
 
         // Level progress dots
         for (let i = 0; i < maxLevel; i++) {
           const dotX = x - (maxLevel * 3) + i * 6;
-          const dotY = y + currentSize/2 + 40;
-          ctx.fillStyle = i < level ? (isAboutToDecay ? '#FF4500' : '#FFD700') : 'rgba(255, 215, 0, 0.3)';
+          const dotY = y + radius + 35;
+          ctx.fillStyle = i < level ? '#FFD700' : 'rgba(255, 215, 0, 0.3)';
           ctx.beginPath();
           ctx.arc(dotX, dotY, 2, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
+      ctx.restore();
+
+      // Version tag in top right corner
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'right';
+      ctx.fillText('v2.1', canvas.width - 10, 25);
       ctx.restore();
 
       // Level-up wave effect
