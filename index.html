@@ -111,6 +111,20 @@
       canvas.style.display = 'block';
     }
 
+    // Player setup - define first before any functions that use it
+    const player = {
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 20,
+      color: 'white'
+    };
+
+    function resetPlayerPosition() {
+      player.x = canvas.width / 2 - 25;
+      player.y = canvas.height - 80; // Moved higher for mobile visibility
+    }
+
     // Initial resize and add event listener for window resize
     resizeCanvas();
     resetPlayerPosition();
@@ -204,21 +218,6 @@
         console.log("Shield UNLOCKED!");
       }
     }
-
-
-    // Player setup.
-    function resetPlayerPosition() {
-      player.x = canvas.width / 2 - 25;
-      player.y = canvas.height - 80; // Moved higher for mobile visibility
-    }
-    
-    const player = {
-      x: 0,
-      y: 0,
-      width: 50,
-      height: 20,
-      color: 'white'
-    };
 
     // Functions to spawn game objects.
     function getDifficultySettings() {
