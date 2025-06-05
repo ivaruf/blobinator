@@ -428,8 +428,8 @@
     function updatePowerUpDecay() {
       const currentTime = Date.now();
 
-      // Check decay for each power-up type
-      ['rapid', 'spray', 'bullet', 'shield', 'speed', 'multi'].forEach(type => {
+      // Check decay for each power-up type (excluding shield)
+      ['rapid', 'spray', 'bullet', 'speed', 'multi'].forEach(type => {
         let currentLevel;
         switch(type) {
           case 'rapid': currentLevel = permanentRapidLevel; break;
@@ -514,9 +514,9 @@
         // Much faster decay at higher levels - exponential decay curve
         const levelFromMin = currentLevel - 2;
         const maxLevelFromMin = maxLevel - 2;
-        const decayMultiplier = Math.pow(0.4, levelFromMin / maxLevelFromMin); // Exponential curve
-        const minInterval = 8000; // 8 seconds for max level
-        const maxInterval = 45000; // 45 seconds for level 3
+        const decayMultiplier = Math.pow(0.2, levelFromMin / maxLevelFromMin); // Stronger exponential curve
+        const minInterval = 5000; // 5 seconds for max level
+        const maxInterval = 30000; // 30 seconds for level 3
         powerUpDecayIntervals[type] = minInterval + (maxInterval - minInterval) * decayMultiplier;
       }
     }
@@ -613,10 +613,10 @@
       powerUpDecayIntervals = {
         rapid: 0,
         spray: 0,
-        bullet: currentTime,
-        shield: currentTime,
-        speed: currentTime,
-        multi: currentTime
+        bullet: 0,
+        shield: 0,
+        speed: 0,
+        multi: 0
       };
 
       // Reset level system
@@ -1166,14 +1166,14 @@
         // Reset shadow
         ctx.shadowBlur = 0;
 
-        // Shield number display above ship
+        // Shield number display at bottom of circle
         ctx.fillStyle = '#00FFFF';
         ctx.font = 'bold 16px Arial';
         ctx.textAlign = 'center';
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
-        ctx.strokeText(playerShield, player.x + player.width/2, player.y - 15);
-        ctx.fillText(playerShield, player.x + player.width/2, player.y - 15);
+        ctx.strokeText(playerShield, player.x + player.width/2, player.y + player.height/2 + shieldRadius + 20);
+        ctx.fillText(playerShield, player.x + player.width/2, player.y + player.height/2 + shieldRadius + 20);
       }
 
       ctx.restore();
@@ -1647,10 +1647,7 @@
         powerUpX += spacing;
       }
 
-      if (hasShieldPowerUp) {
-        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#9932CC', '🛡️', 1 + permanentShieldLevel, 10, 'shield');
-        powerUpX += spacing;
-      }
+      
 
       if (hasSpeedPowerUp) {
         drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FF69B4', '🚀', 1 + permanentSpeedLevel, 5, 'speed');
@@ -1666,7 +1663,7 @@
       function drawPowerUpIcon(x, y, size, color, emoji, level, maxLevel, powerUpType) {
         const currentTime = Date.now();
         const timeUntilDecay = powerUpDecayIntervals[powerUpType] - (currentTime - powerUpDecayTimers[powerUpType]);
-        const decayProgress = level > 2 && powerUpDecayIntervals[powerUpType] > 0 ? 
+        const decayProgress = level > 2 && powerUpDecayIntervals[powerUpType] > 0 && powerUpType !== 'shield' ? 
           1 - (timeUntilDecay / powerUpDecayIntervals[powerUpType]) : 0;
 
         // Asteroid-style irregular shape
