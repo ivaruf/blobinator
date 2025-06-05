@@ -16,10 +16,10 @@ window.drawHUD = function drawHUD() {
 
 function drawScore() {
   const scoreX = 15 * mobileScale;
-  const scoreY = 30 * mobileScale;
+  const scoreY = 40 * mobileScale;
 
   ctx.shadowColor = '#00FFFF';
-  ctx.shadowBlur = 5 * mobileScale;
+  ctx.shadowBlur = 15 * mobileScale;
   ctx.fillStyle = '#FFD700';
   ctx.font = `bold ${42 * mobileScale}px Arial`;
   ctx.textAlign = 'left';
@@ -28,31 +28,35 @@ function drawScore() {
 }
 
 function drawDifficultyBadge() {
-  const diffX = 15 * mobileScale + 120;
-  const diffBadgeGradient = ctx.createRadialGradient(diffX + 15, 30 * mobileScale - 5, 0, diffX + 15, 30 * mobileScale - 5, 20);
+  const diffX = 320 * mobileScale;
+  const diffY = 40 * mobileScale;
+  const radius = 15 * mobileScale;
   
   const colorMap = {
-    'easy': { start: '#32CD32', end: '#228B22' },
-    'medium': { start: '#FFA500', end: '#FF8C00' },
-    'hard': { start: '#FF4500', end: '#DC143C' }
+    'easy': { color: '#00FF00', glow: 'rgba(0, 255, 0, 0.6)' },
+    'medium': { color: '#FFB000', glow: 'rgba(255, 165, 0, 0.6)' },
+    'hard': { color: '#FF4444', glow: 'rgba(255, 0, 0, 0.6)' }
   };
   
   const colors = colorMap[difficulty];
-  diffBadgeGradient.addColorStop(0, colors.start);
-  diffBadgeGradient.addColorStop(1, colors.end);
-
-  ctx.fillStyle = diffBadgeGradient;
+  
+  // Neon glow effect
+  ctx.shadowColor = colors.color;
+  ctx.shadowBlur = 20 * mobileScale;
+  ctx.strokeStyle = colors.color;
+  ctx.lineWidth = 3 * mobileScale;
   ctx.beginPath();
-  ctx.arc(diffX + 15, 30 * mobileScale - 5, 18, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 2;
+  ctx.arc(diffX, diffY, radius, 0, Math.PI * 2);
   ctx.stroke();
-
-  ctx.fillStyle = 'white';
-  ctx.font = 'bold 12px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText(difficulty.toUpperCase(), diffX + 15, 30 * mobileScale - 1);
+  
+  // Inner glow
+  ctx.shadowBlur = 10 * mobileScale;
+  ctx.fillStyle = colors.glow;
+  ctx.beginPath();
+  ctx.arc(diffX, diffY, radius * 0.7, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.shadowBlur = 0;
 }
 
 function drawLevelProgress() {
@@ -61,32 +65,46 @@ function drawLevelProgress() {
   const pointsInLevel = score - currentLevelThreshold;
   const pointsNeeded = nextLevelThreshold - currentLevelThreshold;
   const levelProgress = Math.min(pointsInLevel / pointsNeeded, 1);
-  const levelX = 15;
-  const levelY = 70;
+  const levelX = 15 * mobileScale;
+  const levelY = 80 * mobileScale;
 
-  ctx.fillStyle = 'white';
-  ctx.font = `bold ${20 * mobileScale}px Arial`;
+  // Level text with same font as score and neon glow
+  ctx.shadowColor = '#00FFFF';
+  ctx.shadowBlur = 15 * mobileScale;
+  ctx.fillStyle = '#FFD700';
+  ctx.font = `bold ${42 * mobileScale}px Arial`;
   ctx.textAlign = 'left';
   ctx.fillText(`LEVEL ${currentLevel}`, levelX, levelY);
+  ctx.shadowBlur = 0;
 
   const barWidth = 200 * mobileScale;
   const barHeight = 12 * mobileScale;
   const barX = levelX;
-  const barY = levelY + 5;
+  const barY = levelY + 15 * mobileScale;
 
-  ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+  // Background bar with subtle glow
+  ctx.shadowColor = '#333333';
+  ctx.shadowBlur = 5 * mobileScale;
+  ctx.fillStyle = 'rgba(50, 50, 50, 0.8)';
   ctx.fillRect(barX, barY, barWidth, barHeight);
 
+  // Neon progress bar
   const progressGradient = ctx.createLinearGradient(barX, barY, barX + barWidth, barY);
   progressGradient.addColorStop(0, '#00FF00');
   progressGradient.addColorStop(0.5, '#FFFF00');
   progressGradient.addColorStop(1, '#FF4500');
+  
+  ctx.shadowColor = '#00FFFF';
+  ctx.shadowBlur = 10 * mobileScale;
   ctx.fillStyle = progressGradient;
   ctx.fillRect(barX, barY, barWidth * levelProgress, barHeight);
 
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 1;
+  // Neon border
+  ctx.shadowBlur = 8 * mobileScale;
+  ctx.strokeStyle = '#00FFFF';
+  ctx.lineWidth = 2 * mobileScale;
   ctx.strokeRect(barX, barY, barWidth, barHeight);
+  ctx.shadowBlur = 0;
 }
 
 function drawBombs() {
