@@ -1,11 +1,6 @@
 
 // Entities module - Player, enemies, bullets, powerups
 
-// Ensure required variables are available
-if (typeof mobileScale === 'undefined') {
-  var mobileScale = 1;
-}
-
 // Player setup
 const player = {
   x: 0,

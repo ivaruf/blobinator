@@ -1,11 +1,6 @@
 
 // Graphics module - All drawing and rendering functions
 
-// Ensure mobileScale is available
-if (typeof mobileScale === 'undefined') {
-  var mobileScale = 1;
-}
-
 function drawPlayer() {
   ctx.save();
 

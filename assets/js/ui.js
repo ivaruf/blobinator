@@ -1,11 +1,6 @@
 
 // UI module - HUD, menus, and interface elements
 
-// Ensure mobileScale is available
-if (typeof mobileScale === 'undefined') {
-  var mobileScale = 1;
-}
-
 function drawHUD() {
   ctx.save();
 
