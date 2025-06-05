@@ -112,6 +112,24 @@
     let baseEnemySpeed = 1;
     let bossDefeatedThisLevel = true; // Start true so first level can progress
 
+    // Power-up decay system
+    let powerUpDecayTimers = {
+      rapid: 0,
+      spray: 0,
+      bullet: 0,
+      shield: 0,
+      speed: 0,
+      multi: 0
+    };
+    let powerUpDecayIntervals = {
+      rapid: 0,
+      spray: 0,
+      bullet: 0,
+      shield: 0,
+      speed: 0,
+      multi: 0
+    };
+
     // Skill-based stats and temporary boosts
     let killStreak = 0;
     let maxKillStreak = 0;
@@ -392,6 +410,102 @@
       levelUpWaveTimer = 60; // 1 second at 60 FPS
     }
 
+    // Power-up decay function
+    function updatePowerUpDecay() {
+      const currentTime = Date.now();
+      
+      // Check decay for each power-up type
+      ['rapid', 'spray', 'bullet', 'shield', 'speed', 'multi'].forEach(type => {
+        let currentLevel;
+        switch(type) {
+          case 'rapid': currentLevel = permanentRapidLevel; break;
+          case 'spray': currentLevel = permanentSprayLevel; break;
+          case 'bullet': currentLevel = permanentBulletLevel; break;
+          case 'shield': currentLevel = permanentShieldLevel; break;
+          case 'speed': currentLevel = permanentSpeedLevel; break;
+          case 'multi': currentLevel = permanentMultiLevel; break;
+        }
+        
+        // Only decay if above level 2
+        if (currentLevel > 2) {
+          // Check if it's time to decay
+          if (currentTime - powerUpDecayTimers[type] >= powerUpDecayIntervals[type]) {
+            // Decay the power-up by 1 level
+            switch(type) {
+              case 'rapid': 
+                permanentRapidLevel = Math.max(2, permanentRapidLevel - 1);
+                break;
+              case 'spray': 
+                permanentSprayLevel = Math.max(2, permanentSprayLevel - 1);
+                break;
+              case 'bullet': 
+                permanentBulletLevel = Math.max(2, permanentBulletLevel - 1);
+                break;
+              case 'shield': 
+                permanentShieldLevel = Math.max(2, permanentShieldLevel - 1);
+                // Adjust shield accordingly
+                playerShield = Math.max(playerShield - 5, permanentShieldLevel * 5);
+                break;
+              case 'speed': 
+                permanentSpeedLevel = Math.max(2, permanentSpeedLevel - 1);
+                break;
+              case 'multi': 
+                permanentMultiLevel = Math.max(2, permanentMultiLevel - 1);
+                break;
+            }
+            
+            // Reset decay timer for this power-up
+            powerUpDecayTimers[type] = currentTime;
+            setPowerUpDecayInterval(type);
+          }
+        }
+      });
+    }
+    
+    // Set decay interval based on power-up level (higher level = faster decay)
+    function setPowerUpDecayInterval(type) {
+      let currentLevel;
+      let maxLevel;
+      
+      switch(type) {
+        case 'rapid': 
+          currentLevel = permanentRapidLevel; 
+          maxLevel = 10;
+          break;
+        case 'spray': 
+          currentLevel = permanentSprayLevel; 
+          maxLevel = 10;
+          break;
+        case 'bullet': 
+          currentLevel = permanentBulletLevel; 
+          maxLevel = 2;
+          break;
+        case 'shield': 
+          currentLevel = permanentShieldLevel; 
+          maxLevel = 5;
+          break;
+        case 'speed': 
+          currentLevel = permanentSpeedLevel; 
+          maxLevel = 5;
+          break;
+        case 'multi': 
+          currentLevel = permanentMultiLevel; 
+          maxLevel = 3;
+          break;
+      }
+      
+      if (currentLevel <= 2) {
+        powerUpDecayIntervals[type] = 0; // No decay at level 2 or below
+      } else {
+        // Calculate decay interval: max level = 20 seconds, scales down from there
+        // Higher levels decay faster
+        const levelProgress = (currentLevel - 2) / (maxLevel - 2);
+        const minInterval = 20000; // 20 seconds for max level
+        const maxInterval = 60000; // 60 seconds for level 3
+        powerUpDecayIntervals[type] = maxInterval - (levelProgress * (maxInterval - minInterval));
+      }
+    }
+
     // Level up function - triggers wave attack, then clears remaining enemies and power-ups
     function levelUp() {
       currentLevel++;
@@ -409,83 +523,25 @@
         bossDefeatedThisLevel = true; // Reset boss defeat status for new level
       }, 1000);
       
-      // Identify maxed out power-ups
-      const maxedRapid = permanentRapidLevel >= 10;
-      const maxedSpray = permanentSprayLevel >= 10;
-      const maxedBullet = permanentBulletLevel >= 2;
-      const maxedShield = permanentShieldLevel >= 5;
-      const maxedSpeed = permanentSpeedLevel >= 5;
-      const maxedMulti = permanentMultiLevel >= 3;
-      
-      // Collect all power-ups that the player currently has (not maxed)
-      const currentPowerUps = [];
-      if (hasRapidPowerUp && !maxedRapid) currentPowerUps.push('rapid');
-      if (hasSprayPowerUp && !maxedSpray) currentPowerUps.push('spray');
-      if (hasBulletPowerUp && !maxedBullet) currentPowerUps.push('bullet');
-      if (hasShieldPowerUp && !maxedShield) currentPowerUps.push('shield');
-      if (hasSpeedPowerUp && !maxedSpeed) currentPowerUps.push('speed');
-      if (hasMultiPowerUp && !maxedMulti) currentPowerUps.push('multi');
-      
-      // Randomly select 2 power-ups to retain at level 2
-      const retainedPowerUps = [];
-      if (currentPowerUps.length > 0) {
-        // Shuffle and take up to 2
-        const shuffled = [...currentPowerUps].sort(() => Math.random() - 0.5);
-        retainedPowerUps.push(...shuffled.slice(0, Math.min(2, shuffled.length)));
+      // Much less aggressive power-up reduction on level up
+      // Only reduce power-ups by 1 level if they're above level 3
+      if (permanentRapidLevel > 3) permanentRapidLevel = Math.max(2, permanentRapidLevel - 1);
+      if (permanentSprayLevel > 3) permanentSprayLevel = Math.max(2, permanentSprayLevel - 1);
+      if (permanentBulletLevel > 2) permanentBulletLevel = Math.max(2, permanentBulletLevel - 1);
+      if (permanentShieldLevel > 3) {
+        permanentShieldLevel = Math.max(2, permanentShieldLevel - 1);
+        playerShield = Math.max(playerShield - 5, permanentShieldLevel * 5);
       }
+      if (permanentSpeedLevel > 3) permanentSpeedLevel = Math.max(2, permanentSpeedLevel - 1);
+      if (permanentMultiLevel > 2) permanentMultiLevel = Math.max(2, permanentMultiLevel - 1);
       
-      // Reset all power-ups to default
-      permanentRapidLevel = 0;
-      permanentSprayLevel = 0;
-      permanentBulletLevel = 0;
-      permanentShieldLevel = 0;
-      permanentSpeedLevel = 0;
-      permanentMultiLevel = 0;
-      
-      // Set maxed power-ups to level 2
-      if (maxedRapid) permanentRapidLevel = 2;
-      if (maxedSpray) permanentSprayLevel = 2;
-      if (maxedBullet) permanentBulletLevel = 1; // Bullet max is 2, so keep 1
-      if (maxedShield) permanentShieldLevel = 2;
-      if (maxedSpeed) permanentSpeedLevel = 2;
-      if (maxedMulti) permanentMultiLevel = 1; // Multi max is 3, so keep 1
-      
-      // Set randomly retained power-ups to level 2
-      retainedPowerUps.forEach(powerUp => {
-        switch(powerUp) {
-          case 'rapid': permanentRapidLevel = 2; break;
-          case 'spray': permanentSprayLevel = 2; break;
-          case 'bullet': permanentBulletLevel = 1; break; // Bullet max is 2, so keep 1
-          case 'shield': permanentShieldLevel = 2; break;
-          case 'speed': permanentSpeedLevel = 2; break;
-          case 'multi': permanentMultiLevel = 1; break; // Multi max is 3, so keep 1
-        }
-      });
-      
-      // Set remaining non-maxed, non-retained power-ups to level 1 if they were active
-      currentPowerUps.forEach(powerUp => {
-        if (!retainedPowerUps.includes(powerUp)) {
-          switch(powerUp) {
-            case 'rapid': if (permanentRapidLevel === 0) permanentRapidLevel = 1; break;
-            case 'spray': if (permanentSprayLevel === 0) permanentSprayLevel = 1; break;
-            case 'bullet': if (permanentBulletLevel === 0) permanentBulletLevel = 1; break;
-            case 'shield': if (permanentShieldLevel === 0) permanentShieldLevel = 1; break;
-            case 'speed': if (permanentSpeedLevel === 0) permanentSpeedLevel = 1; break;
-            case 'multi': if (permanentMultiLevel === 0) permanentMultiLevel = 1; break;
-          }
-        }
-      });
-      
-      // Update power-up flags based on retained levels
+      // Update power-up flags based on current levels
       hasRapidPowerUp = permanentRapidLevel > 0;
       hasSprayPowerUp = permanentSprayLevel > 0;
       hasBulletPowerUp = permanentBulletLevel > 0;
       hasShieldPowerUp = permanentShieldLevel > 0;
       hasSpeedPowerUp = permanentSpeedLevel > 0;
       hasMultiPowerUp = permanentMultiLevel > 0;
-      
-      // Reset shield to base amount for retained shield level
-      playerShield = permanentShieldLevel > 0 ? permanentShieldLevel * 5 : 0;
       
       // Reset skill-based progression for new level
       killStreak = 0;
@@ -494,8 +550,6 @@
       
       // Increase base difficulty for next level
       baseEnemySpeed += 0.1;
-      
-      // Next level score is calculated dynamically now
       
       // Spawn new power-up boxes for the level
       spawnBoxes();
@@ -530,6 +584,25 @@
       hasMultiPowerUp = false;
       playerShield = 0;
       playerSpeed = 1;
+
+      // Reset decay timers
+      const currentTime = Date.now();
+      powerUpDecayTimers = {
+        rapid: currentTime,
+        spray: currentTime,
+        bullet: currentTime,
+        shield: currentTime,
+        speed: currentTime,
+        multi: currentTime
+      };
+      powerUpDecayIntervals = {
+        rapid: 0,
+        spray: 0,
+        bullet: 0,
+        shield: 0,
+        speed: 0,
+        multi: 0
+      };
 
       // Reset level system
       currentLevel = 1;
@@ -692,6 +765,8 @@
 
     // Update game state.
     function update() {
+      // Update power-up decay
+      updatePowerUpDecay();
       let effectiveRapid = 1 + permanentRapidLevel;
       let bulletInterval = Math.max(10 / effectiveRapid, 2);
       bulletFireTimer++;
@@ -827,32 +902,44 @@
                 if (1 + permanentRapidLevel < 10) {
                   permanentRapidLevel++;
                   hasRapidPowerUp = true;
+                  powerUpDecayTimers.rapid = Date.now();
+                  setPowerUpDecayInterval('rapid');
                 }
               } else if (box.type === "spray") {
                 if (1 + permanentSprayLevel < 10) {
                   permanentSprayLevel++;
                   hasSprayPowerUp = true;
+                  powerUpDecayTimers.spray = Date.now();
+                  setPowerUpDecayInterval('spray');
                 }
               } else if (box.type === "bullet") {
                 if (1 + permanentBulletLevel < 2) {
                   permanentBulletLevel++;
                   hasBulletPowerUp = true;
+                  powerUpDecayTimers.bullet = Date.now();
+                  setPowerUpDecayInterval('bullet');
                 }
               } else if (box.type === "shield") {
                 if (1 + permanentShieldLevel < 5) {
                   permanentShieldLevel++;
                   hasShieldPowerUp = true;
                   playerShield += 5;
+                  powerUpDecayTimers.shield = Date.now();
+                  setPowerUpDecayInterval('shield');
                 }
               } else if (box.type === "speed") {
                 if (1 + permanentSpeedLevel < 5) {
                   permanentSpeedLevel++;
                   hasSpeedPowerUp = true;
+                  powerUpDecayTimers.speed = Date.now();
+                  setPowerUpDecayInterval('speed');
                 }
               } else if (box.type === "multi") {
                 if (1 + permanentMultiLevel < 3) {
                   permanentMultiLevel++;
                   hasMultiPowerUp = true;
+                  powerUpDecayTimers.multi = Date.now();
+                  setPowerUpDecayInterval('multi');
                 }
               } else if (box.type === "bomb") {
                 bombCount = Math.min(bombCount + 1, 10);
@@ -1534,45 +1621,62 @@
       const spacing = 45;
 
       if (hasRapidPowerUp) {
-        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#1E90FF', '⚡', 1 + permanentRapidLevel, 10);
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#1E90FF', '⚡', 1 + permanentRapidLevel, 10, 'rapid');
         powerUpX += spacing;
       }
 
       if (hasSprayPowerUp) {
-        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FFA500', '💥', 1 + permanentSprayLevel, 10);
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FFA500', '💥', 1 + permanentSprayLevel, 10, 'spray');
         powerUpX += spacing;
       }
 
       if (hasBulletPowerUp) {
-        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#32CD32', '🔥', 1 + permanentBulletLevel, 2);
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#32CD32', '🔥', 1 + permanentBulletLevel, 2, 'bullet');
         powerUpX += spacing;
       }
 
       if (hasShieldPowerUp) {
-        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#9932CC', '🛡️', 1 + permanentShieldLevel, 5);
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#9932CC', '🛡️', 1 + permanentShieldLevel, 5, 'shield');
         powerUpX += spacing;
-        console.log("Shield UNLOCKED!");
       }
 
       if (hasSpeedPowerUp) {
-        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FF69B4', '🚀', 1 + permanentSpeedLevel, 5);
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#FF69B4', '🚀', 1 + permanentSpeedLevel, 5, 'speed');
         powerUpX += spacing;
       }
 
       if (hasMultiPowerUp) {
-        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#DC143C', '🎯', 1 + permanentMultiLevel, 3);
+        drawPowerUpIcon(powerUpX, powerUpY, iconSize, '#DC143C', '🎯', 1 + permanentMultiLevel, 3, 'multi');
         powerUpX += spacing;
       }
 
-      // Helper function for animated power-up icons
-      function drawPowerUpIcon(x, y, size, color, emoji, level, maxLevel) {
-        const pulse = Math.sin(Date.now() / 400) * 0.1 + 0.9;
+      // Helper function for animated power-up icons with decay warning
+      function drawPowerUpIcon(x, y, size, color, emoji, level, maxLevel, powerUpType) {
+        // Check if power-up is about to decay (within 5 seconds)
+        const currentTime = Date.now();
+        const timeUntilDecay = powerUpDecayIntervals[powerUpType] - (currentTime - powerUpDecayTimers[powerUpType]);
+        const isAboutToDecay = level > 2 && timeUntilDecay > 0 && timeUntilDecay < 5000;
+        
+        // Enhanced pulsating for high levels about to decay
+        let pulse;
+        if (isAboutToDecay) {
+          pulse = Math.sin(Date.now() / 150) * 0.3 + 0.7; // Faster, more dramatic pulse
+        } else {
+          pulse = Math.sin(Date.now() / 400) * 0.1 + 0.9; // Normal pulse
+        }
         const currentSize = size * pulse;
 
         // Background circle with gradient
         const iconGradient = ctx.createRadialGradient(x, y, 0, x, y, currentSize/2);
-        iconGradient.addColorStop(0, color);
-        iconGradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+        if (isAboutToDecay) {
+          // Warning colors when about to decay
+          iconGradient.addColorStop(0, '#FF6B6B');
+          iconGradient.addColorStop(0.5, color);
+          iconGradient.addColorStop(1, 'rgba(255, 0, 0, 0.7)');
+        } else {
+          iconGradient.addColorStop(0, color);
+          iconGradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+        }
 
         ctx.fillStyle = iconGradient;
         ctx.beginPath();
@@ -1580,10 +1684,10 @@
         ctx.fill();
 
         // Border with glow
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 8;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+        ctx.shadowColor = isAboutToDecay ? '#FF4500' : color;
+        ctx.shadowBlur = isAboutToDecay ? 15 : 8;
+        ctx.strokeStyle = isAboutToDecay ? '#FF4500' : color;
+        ctx.lineWidth = isAboutToDecay ? 3 : 2;
         ctx.stroke();
         ctx.shadowBlur = 0;
 
@@ -1593,16 +1697,24 @@
         ctx.textAlign = 'center';
         ctx.fillText(emoji, x, y + currentSize * 0.1);
 
-        // Level indicator
-        ctx.fillStyle = '#FFD700';
+        // Level indicator with decay warning
+        ctx.fillStyle = isAboutToDecay ? '#FF4500' : '#FFD700';
         ctx.font = 'bold 12px Arial';
         ctx.fillText(level, x, y + currentSize/2 + 15);
+
+        // Decay timer display for levels > 2
+        if (level > 2 && timeUntilDecay > 0) {
+          const secondsLeft = Math.ceil(timeUntilDecay / 1000);
+          ctx.fillStyle = isAboutToDecay ? '#FF0000' : '#FFFFFF';
+          ctx.font = 'bold 10px Arial';
+          ctx.fillText(`${secondsLeft}s`, x, y + currentSize/2 + 30);
+        }
 
         // Level progress dots
         for (let i = 0; i < maxLevel; i++) {
           const dotX = x - (maxLevel * 3) + i * 6;
-          const dotY = y + currentSize/2 + 25;
-          ctx.fillStyle = i < level ? '#FFD700' : 'rgba(255, 215, 0, 0.3)';
+          const dotY = y + currentSize/2 + 40;
+          ctx.fillStyle = i < level ? (isAboutToDecay ? '#FF4500' : '#FFD700') : 'rgba(255, 215, 0, 0.3)';
           ctx.beginPath();
           ctx.arc(dotX, dotY, 2, 0, Math.PI * 2);
           ctx.fill();
