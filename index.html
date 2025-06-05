@@ -511,13 +511,22 @@
       if (currentLevel <= 2) {
         powerUpDecayIntervals[type] = 0; // No decay at level 2 or below
       } else {
-        // Much faster decay at higher levels - exponential decay curve
+        // Level-based decay speed - higher levels decay much faster
         const levelFromMin = currentLevel - 2;
         const maxLevelFromMin = maxLevel - 2;
-        const decayMultiplier = Math.pow(0.2, levelFromMin / maxLevelFromMin); // Stronger exponential curve
-        const minInterval = 5000; // 5 seconds for max level
-        const maxInterval = 30000; // 30 seconds for level 3
-        powerUpDecayIntervals[type] = minInterval + (maxInterval - minInterval) * decayMultiplier;
+        const powerUpLevelMultiplier = Math.pow(0.2, levelFromMin / maxLevelFromMin); // Power-up level effect
+        
+        // Game level multiplier - dramatically faster decay at higher game levels
+        const gameLevelMultiplier = Math.pow(0.6, (currentLevel - 1) * 0.5); // Each level reduces time by 40%
+        
+        const baseMinInterval = 8000; // 8 seconds base for max level
+        const baseMaxInterval = 45000; // 45 seconds base for level 3
+        
+        // Apply both multipliers
+        const minInterval = baseMinInterval * gameLevelMultiplier;
+        const maxInterval = baseMaxInterval * gameLevelMultiplier;
+        
+        powerUpDecayIntervals[type] = minInterval + (maxInterval - minInterval) * powerUpLevelMultiplier;
       }
     }
 
@@ -795,7 +804,8 @@
         for (let wave = 0; wave < waveCount; wave++) {
           setTimeout(() => {
             if (permanentSprayLevel > 0) {
-          const numBullets = 1 + permanentSprayLevel;          if (numBullets === 1) {
+              const numBullets = 1 + permanentSprayLevel;
+              if (numBullets === 1) {
             bullets.push({
               x: player.x + player.width / 2,
               y: player.y,
