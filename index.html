@@ -108,7 +108,8 @@
 
     function resetPlayerPosition() {
       player.x = canvas.width / 2 - 25;
-      player.y = canvas.height - 80; // Moved higher for mobile visibility
+      // Ensure player is always visible on mobile by using a more conservative offset
+      player.y = canvas.height - 120; // Much higher offset for better mobile visibility
     }
 
     // Initial resize and add event listener for window resize
