@@ -84,12 +84,19 @@
     const mediumBtn = document.getElementById('mediumBtn');
     const hardBtn = document.getElementById('hardBtn');
 
+    // Mobile scaling system
+    let mobileScale = 1;
+    let isMobile = false;
+
     // Set canvas size to full screen with max width, ensuring full frame visibility
     function resizeCanvas() {
       const maxWidth = Math.min(window.innerWidth, 1080); // Max width of 1080px
       
+      // Detect mobile and set scaling
+      isMobile = window.innerWidth <= 768;
+      mobileScale = isMobile ? 1.8 : 1; // Scale everything 1.8x bigger on mobile
+      
       // On mobile, account for browser UI elements and ensure full play area is visible
-      const isMobile = window.innerWidth <= 768;
       let availableHeight = window.innerHeight;
       
       if (isMobile) {
@@ -119,14 +126,15 @@
       y: 0,
       width: 50,
       height: 20,
-      color: 'white'
+      color: 'white',
+      get scaledWidth() { return this.width * mobileScale; },
+      get scaledHeight() { return this.height * mobileScale; }
     };
 
     function resetPlayerPosition() {
-      player.x = canvas.width / 2 - 25;
+      player.x = canvas.width / 2 - (player.scaledWidth / 2);
       // Dynamic positioning based on screen size - ensure player is always visible
-      const isMobile = window.innerWidth <= 768;
-      const bottomOffset = isMobile ? Math.max(80, canvas.height * 0.1) : 80;
+      const bottomOffset = isMobile ? Math.max(80 * mobileScale, canvas.height * 0.1) : 80;
       player.y = canvas.height - bottomOffset;
     }
 
@@ -285,21 +293,22 @@
         let blob = {
           x: clusterCenterX + offsetX,
           y: -20 + offsetY,
-          radius: isSpinner ? 25 : 20,
+          radius: (isSpinner ? 25 : 20) * mobileScale,
           speed: (isSpinner ? 0.5 + Math.random() * 0.5 : 1 + Math.random()) * baseEnemySpeed + levelSpeedBonus,
           color: isSpinner ? '#FF00FF' : 'hsl(' + Math.random() * 360 + ', 100%, 50%)',
           health: isSpinner ? health + 2 : health,
           maxHealth: isSpinner ? health + 2 : health,
           isSpinner: isSpinner,
           rotation: 0,
-          pulsatePhase: Math.random() * Math.PI * 2
+          pulsatePhase: Math.random() * Math.PI * 2,
+          get scaledRadius() { return this.radius; } // Already scaled during creation
         };
         blobs.push(blob);
       }
     }
 
     function spawnBoxForType(type, isInitial = false) {
-      const boxWidth = 40, boxHeight = 40;
+      const boxWidth = 40 * mobileScale, boxHeight = 40 * mobileScale;
       const min = 10, max = isInitial ? 20 : 50;
       let boxColor, doorColor;
       if(type === "rapid") {
@@ -422,7 +431,7 @@
     spawnBoxes();
 
     function spawnBoss() {
-      let bossRadius = 80;
+      let bossRadius = 80 * mobileScale;
       const diffSettings = getDifficultySettings();
       const baseHealth = 500 + (currentLevel - 1) * 50;
       const health = Math.floor(baseHealth * diffSettings.bossHealthMultiplier);
@@ -434,7 +443,8 @@
         color: 'red',
         health: health,
         maxHealth: health,
-        isBoss: true
+        isBoss: true,
+        get scaledRadius() { return this.radius; } // Already scaled during creation
       };
       bossDefeatedThisLevel = false; // Mark that boss must be defeated for level up
     }
@@ -712,12 +722,12 @@
       e.preventDefault();
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
-      const targetX = touch.clientX - rect.left - player.width / 2;
+      const targetX = touch.clientX - rect.left - player.scaledWidth / 2;
       const speedMult = 1 + (permanentSpeedLevel * 0.5);
       player.x += (targetX - player.x) * 0.3 * speedMult;
       if (player.x < 0) player.x = 0;
-      if (player.x + player.width > canvas.width) {
-        player.x = canvas.width - player.width;
+      if (player.x + player.scaledWidth > canvas.width) {
+        player.x = canvas.width - player.scaledWidth;
       }
     });
 
@@ -783,12 +793,12 @@
 
     canvas.addEventListener('mousemove', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const targetX = e.clientX - rect.left - player.width / 2;
+      const targetX = e.clientX - rect.left - player.scaledWidth / 2;
       const speedMult = 1 + (permanentSpeedLevel * 0.5);
       player.x += (targetX - player.x) * 0.5 * speedMult;
       if (player.x < 0) player.x = 0;
-      if (player.x + player.width > canvas.width) {
-        player.x = canvas.width - player.width;
+      if (player.x + player.scaledWidth > canvas.width) {
+        player.x = canvas.width - player.scaledWidth;
       }
     });
 
@@ -863,9 +873,9 @@
               const numBullets = 1 + permanentSprayLevel;
               if (numBullets === 1) {
                 bullets.push({
-                  x: player.x + player.width / 2,
+                  x: player.x + player.scaledWidth / 2,
                   y: player.y,
-              radius: 5,
+              radius: 5 * mobileScale,
               vx: 0,
               vy: -bulletSpeed,
               damage: bulletDamage,
@@ -873,18 +883,18 @@
             });
           } else if (numBullets === 2) {
             bullets.push({
-              x: player.x + player.width / 2 - player.width / 4,
+              x: player.x + player.scaledWidth / 2 - player.scaledWidth / 4,
               y: player.y,
-              radius: 5,
+              radius: 5 * mobileScale,
               vx: 0,
               vy: -bulletSpeed,
               damage: bulletDamage,
               color: bulletColor
             });
             bullets.push({
-              x: player.x + player.width / 2 + player.width / 4,
+              x: player.x + player.scaledWidth / 2 + player.scaledWidth / 4,
               y: player.y,
-              radius: 5,
+              radius: 5 * mobileScale,
               vx: 0,
               vy: -bulletSpeed,
               damage: bulletDamage,
@@ -915,9 +925,9 @@
             }
             angles.forEach(angle => {
               bullets.push({
-                x: player.x + player.width / 2,
+                x: player.x + player.scaledWidth / 2,
                 y: player.y,
-                radius: 5,
+                radius: 5 * mobileScale,
                 vx: bulletSpeed * Math.sin(angle),
                 vy: -bulletSpeed * Math.cos(angle),
                 damage: bulletDamage,
@@ -927,9 +937,9 @@
           }
         } else {
           bullets.push({
-              x: player.x + player.width / 2,
+              x: player.x + player.scaledWidth / 2,
               y: player.y,
-              radius: 5,
+              radius: 5 * mobileScale,
               vx: 0,
               vy: -bulletSpeed,
               damage: bulletDamage,
@@ -1184,48 +1194,48 @@
 
       // Ship body
       ctx.fillStyle = shipGradient;
-      ctx.fillRect(player.x, player.y, player.width, player.height);
+      ctx.fillRect(player.x, player.y, player.scaledWidth, player.scaledHeight);
 
       // Ship nose (triangular front)
       ctx.fillStyle = '#FFD700';
       ctx.beginPath();
-      ctx.moveTo(player.x + player.width / 2, player.y - 5);
-      ctx.lineTo(player.x + player.width * 0.3, player.y + 5);
-      ctx.lineTo(player.x + player.width * 0.7, player.y + 5);
+      ctx.moveTo(player.x + player.scaledWidth / 2, player.y - 5 * mobileScale);
+      ctx.lineTo(player.x + player.scaledWidth * 0.3, player.y + 5 * mobileScale);
+      ctx.lineTo(player.x + player.scaledWidth * 0.7, player.y + 5 * mobileScale);
       ctx.closePath();
       ctx.fill();
 
       // Engine exhausts
       ctx.fillStyle = '#FF4500';
-      ctx.fillRect(player.x + 5, player.y + player.height, 8, 6);
-      ctx.fillRect(player.x + player.width - 13, player.y + player.height, 8, 6);
+      ctx.fillRect(player.x + 5 * mobileScale, player.y + player.scaledHeight, 8 * mobileScale, 6 * mobileScale);
+      ctx.fillRect(player.x + player.scaledWidth - 13 * mobileScale, player.y + player.scaledHeight, 8 * mobileScale, 6 * mobileScale);
 
       // Wing details
       ctx.fillStyle = '#4169E1';
-      ctx.fillRect(player.x - 3, player.y + 8, 6, 8);
-      ctx.fillRect(player.x + player.width - 3, player.y + 8, 6, 8);
+      ctx.fillRect(player.x - 3 * mobileScale, player.y + 8 * mobileScale, 6 * mobileScale, 8 * mobileScale);
+      ctx.fillRect(player.x + player.scaledWidth - 3 * mobileScale, player.y + 8 * mobileScale, 6 * mobileScale, 8 * mobileScale);
 
       // Cockpit
       ctx.fillStyle = '#00CED1';
-      ctx.fillRect(player.x + player.width/2 - 8, player.y + 3, 16, 8);
+      ctx.fillRect(player.x + player.scaledWidth/2 - 8 * mobileScale, player.y + 3 * mobileScale, 16 * mobileScale, 8 * mobileScale);
 
       // Enhanced shield visual effect - ring around ship
       if (playerShield > 0) {
         const shieldIntensity = Math.min(playerShield / 20, 1);
-        const shieldRadius = player.width/2 + 8 + (shieldIntensity * 5);
+        const shieldRadius = (player.scaledWidth/2 + 8 + (shieldIntensity * 5)) * mobileScale;
         const shieldAlpha = 0.3 + (shieldIntensity * 0.5);
 
         // Multiple shield rings for enhanced effect
         for (let i = 0; i < 3; i++) {
-          const ringRadius = shieldRadius - (i * 2);
+          const ringRadius = shieldRadius - (i * 2 * mobileScale);
           const ringAlpha = shieldAlpha * (1 - i * 0.2);
 
           ctx.strokeStyle = `rgba(0, 255, 255, ${ringAlpha})`;
-          ctx.lineWidth = 4 - i;
+          ctx.lineWidth = (4 - i) * mobileScale;
           ctx.shadowColor = '#00FFFF';
-          ctx.shadowBlur = 8 + (shieldIntensity * 12);
+          ctx.shadowBlur = (8 + (shieldIntensity * 12)) * mobileScale;
           ctx.beginPath();
-          ctx.arc(player.x + player.width/2, player.y + player.height/2, ringRadius, 0, Math.PI * 2);
+          ctx.arc(player.x + player.scaledWidth/2, player.y + player.scaledHeight/2, ringRadius, 0, Math.PI * 2);
           ctx.stroke();
         }
 
@@ -1234,12 +1244,12 @@
 
         // Shield number display at bottom of circle
         ctx.fillStyle = '#00FFFF';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = `bold ${16 * mobileScale}px Arial`;
         ctx.textAlign = 'center';
         ctx.strokeStyle = 'black';
-        ctx.lineWidth = 3;
-        ctx.strokeText(playerShield, player.x + player.width/2, player.y + player.height/2 + shieldRadius + 20);
-        ctx.fillText(playerShield, player.x + player.width/2, player.y + player.height/2 + shieldRadius + 20);
+        ctx.lineWidth = 3 * mobileScale;
+        ctx.strokeText(playerShield, player.x + player.scaledWidth/2, player.y + player.scaledHeight/2 + shieldRadius + 20 * mobileScale);
+        ctx.fillText(playerShield, player.x + player.scaledWidth/2, player.y + player.scaledHeight/2 + shieldRadius + 20 * mobileScale);
       }
 
       ctx.restore();
@@ -1669,21 +1679,21 @@
       ctx.save();
 
       // Animated Score Display
-      const scoreX = 15;
-      const scoreY = 30;
+      const scoreX = 15 * mobileScale;
+      const scoreY = 30 * mobileScale;
       const scoreGlow = Math.sin(Date.now() / 300) * 0.3 + 0.7;
 
       ctx.shadowColor = '#00FFFF';
-      ctx.shadowBlur = 10 * scoreGlow;
+      ctx.shadowBlur = 10 * scoreGlow * mobileScale;
       ctx.fillStyle = `rgba(255, 255, 255, ${scoreGlow})`;
-      ctx.font = 'bold 24px Arial';
+      ctx.font = `bold ${24 * mobileScale}px Arial`;
       ctx.textAlign = 'left';
       ctx.fillText('SCORE', scoreX, scoreY);
 
-      ctx.shadowBlur = 5;
+      ctx.shadowBlur = 5 * mobileScale;
       ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText(score.toLocaleString(), scoreX, scoreY + 25);
+      ctx.font = `bold ${20 * mobileScale}px Arial`;
+      ctx.fillText(score.toLocaleString(), scoreX, scoreY + 25 * mobileScale);
       ctx.shadowBlur = 0;
 
       // Difficulty Badge
