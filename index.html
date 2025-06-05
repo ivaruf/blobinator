@@ -311,18 +311,19 @@
       // Always spawn rapid fire
       spawnBoxForType("rapid", true);
       
-      // Spawn one random available power-up for level 1
-      if (currentLevel === 1) {
-        spawnBoxForType("spray", true);
-      } else {
-        // For higher levels, spawn based on availability
-        if (currentLevel >= 1) spawnBoxForType("spray", true);
-        if (currentLevel >= 2) {
-          spawnBoxForType("bullet", true);
-          spawnBoxForType("shield", true);
-        }
-        if (currentLevel >= 3) spawnBoxForType("speed", true);
-        if (currentLevel >= 4) spawnBoxForType("multi", true);
+      // Always spawn spray since it's available from level 1
+      spawnBoxForType("spray", true);
+      
+      // Spawn additional power-ups based on level
+      if (currentLevel >= 2) {
+        spawnBoxForType("bullet", true);
+        spawnBoxForType("shield", true);
+      }
+      if (currentLevel >= 3) {
+        spawnBoxForType("speed", true);
+      }
+      if (currentLevel >= 4) {
+        spawnBoxForType("multi", true);
       }
     }
     // Initial box spawn.
