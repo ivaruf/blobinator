@@ -1,7 +1,7 @@
 
 // UI module - HUD, menus, and interface elements
 
-function drawHUD() {
+window.drawHUD = function drawHUD() {
   ctx.save();
 
   drawScore();
