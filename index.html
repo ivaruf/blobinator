@@ -10,10 +10,10 @@
       overflow: hidden; 
       background: url('https://images.unsplash.com/photo-1502134249126-9f3755a50d78?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80') no-repeat center center fixed;
       background-size: cover;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh; /* Use dynamic viewport height for mobile */
     }
     canvas { 
       display: block; 
@@ -84,17 +84,33 @@
     const mediumBtn = document.getElementById('mediumBtn');
     const hardBtn = document.getElementById('hardBtn');
 
-    // Set canvas size to full screen with max width
+    // Set canvas size to full screen with max width, ensuring full frame visibility
     function resizeCanvas() {
       const maxWidth = Math.min(window.innerWidth, 1080); // Max width of 1080px
-      const maxHeight = window.innerHeight;
+      
+      // On mobile, account for browser UI elements and ensure full play area is visible
+      const isMobile = window.innerWidth <= 768;
+      let availableHeight = window.innerHeight;
+      
+      if (isMobile) {
+        // Account for mobile browser UI (address bar, etc.)
+        availableHeight = Math.min(window.innerHeight, window.screen.height * 0.9);
+      }
       
       canvas.width = maxWidth;
-      canvas.height = maxHeight;
+      canvas.height = availableHeight;
+      
+      // Set CSS size to ensure proper scaling
+      canvas.style.width = maxWidth + 'px';
+      canvas.style.height = availableHeight + 'px';
       
       // Center the canvas if it's smaller than viewport width
       canvas.style.margin = '0 auto';
       canvas.style.display = 'block';
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0';
+      canvas.style.left = '50%';
+      canvas.style.transform = 'translateX(-50%)';
     }
 
     // Player setup - define first before any functions that use it
@@ -108,8 +124,10 @@
 
     function resetPlayerPosition() {
       player.x = canvas.width / 2 - 25;
-      // Ensure player is always visible on mobile by using a more conservative offset
-      player.y = canvas.height - 120; // Much higher offset for better mobile visibility
+      // Dynamic positioning based on screen size - ensure player is always visible
+      const isMobile = window.innerWidth <= 768;
+      const bottomOffset = isMobile ? Math.max(80, canvas.height * 0.1) : 80;
+      player.y = canvas.height - bottomOffset;
     }
 
     // Initial resize and add event listener for window resize
