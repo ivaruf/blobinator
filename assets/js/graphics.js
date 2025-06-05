@@ -441,7 +441,7 @@ function drawPowerUpIconSimple(centerX, currentY, type) {
   const safeY = isFinite(currentY) ? currentY : canvas.height / 2;
   
   ctx.fillStyle = 'white';
-  ctx.font = 'bold 16px Arial';
+  ctx.font = `bold ${24 * mobileScale}px Arial`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'black';
   ctx.lineWidth = 2;
@@ -458,11 +458,11 @@ function drawPowerUpIconSimple(centerX, currentY, type) {
 
 function drawBoxHealth(centerX, currentY, radius, health) {
   ctx.fillStyle = 'white';
-  ctx.font = 'bold 12px Arial';
+  ctx.font = `bold ${16 * mobileScale}px Arial`;
   ctx.strokeStyle = 'black';
-  ctx.lineWidth = 2;
-  ctx.strokeText(health, centerX, currentY + radius + 15);
-  ctx.fillText(health, centerX, currentY + radius + 15);
+  ctx.lineWidth = 2 * mobileScale;
+  ctx.strokeText(health, centerX, currentY + radius + 20 * mobileScale);
+  ctx.fillText(health, centerX, currentY + radius + 20 * mobileScale);
 }
 
 function drawHealthBar(entity, color) {

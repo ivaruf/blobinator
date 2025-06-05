@@ -22,13 +22,13 @@ function drawScore() {
   ctx.shadowColor = '#00FFFF';
   ctx.shadowBlur = 10 * scoreGlow * mobileScale;
   ctx.fillStyle = `rgba(255, 255, 255, ${scoreGlow})`;
-  ctx.font = `bold ${24 * mobileScale}px Arial`;
+  ctx.font = `bold ${32 * mobileScale}px Arial`;
   ctx.textAlign = 'left';
   ctx.fillText('SCORE', scoreX, scoreY);
 
   ctx.shadowBlur = 5 * mobileScale;
   ctx.fillStyle = '#FFD700';
-  ctx.font = `bold ${20 * mobileScale}px Arial`;
+  ctx.font = `bold ${28 * mobileScale}px Arial`;
   ctx.fillText(score.toLocaleString(), scoreX, scoreY + 25 * mobileScale);
   ctx.shadowBlur = 0;
 }
@@ -71,12 +71,12 @@ function drawLevelProgress() {
   const levelY = 70;
 
   ctx.fillStyle = 'white';
-  ctx.font = 'bold 16px Arial';
+  ctx.font = `bold ${20 * mobileScale}px Arial`;
   ctx.textAlign = 'left';
   ctx.fillText(`LEVEL ${currentLevel}`, levelX, levelY);
 
-  const barWidth = 150;
-  const barHeight = 8;
+  const barWidth = 200 * mobileScale;
+  const barHeight = 12 * mobileScale;
   const barX = levelX;
   const barY = levelY + 5;
 

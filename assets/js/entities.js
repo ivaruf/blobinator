@@ -5,8 +5,8 @@
 const player = {
   x: 0,
   y: 0,
-  width: 50,
-  height: 20,
+  width: 70,
+  height: 28,
   color: 'white',
   get scaledWidth() { return this.width * mobileScale; },
   get scaledHeight() { return this.height * mobileScale; }
@@ -92,7 +92,7 @@ function spawnCluster() {
     let blob = {
       x: clusterCenterX + offsetX,
       y: -20 + offsetY,
-      radius: (isSpinner ? 25 : 20) * mobileScale,
+      radius: (isSpinner ? 35 : 28) * mobileScale,
       speed: (isSpinner ? 0.5 + Math.random() * 0.5 : 1 + Math.random()) * baseEnemySpeed + levelSpeedBonus,
       color: isSpinner ? '#FF00FF' : 'hsl(' + Math.random() * 360 + ', 100%, 50%)',
       health: isSpinner ? health + 2 : health,
@@ -107,7 +107,7 @@ function spawnCluster() {
 }
 
 function spawnBoxForType(type, isInitial = false) {
-  const boxWidth = 40 * mobileScale, boxHeight = 40 * mobileScale;
+  const boxWidth = 60 * mobileScale, boxHeight = 60 * mobileScale;
   const min = 10, max = isInitial ? 20 : 50;
   let boxColor, doorColor;
   
@@ -201,7 +201,7 @@ function spawnBoss() {
   // Safety checks for canvas dimensions and mobileScale
   const safeCanvasWidth = isFinite(canvas.width) ? canvas.width : 800;
   const safeCanvasHeight = isFinite(canvas.height) ? canvas.height : 600;
-  const safeMobileScale = isFinite(window.mobileScale) ? window.mobileScale : 1;
+  const safeMobileScale = isFinite(mobileScale) ? mobileScale : 1;
   
   let bossRadius = 80 * safeMobileScale;
   const diffSettings = getDifficultySettings();

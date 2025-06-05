@@ -22,7 +22,8 @@ function resizeCanvas() {
   const maxWidth = Math.min(window.innerWidth, 1080);
   
   isMobile = window.innerWidth <= 768;
-  mobileScale = isMobile ? 1.8 : 1;
+  // Much larger mobile scale for better visibility
+  mobileScale = isMobile ? 3.2 : 1;
   
   let availableHeight = window.innerHeight;
   
