@@ -198,18 +198,28 @@ function spawnBoxes() {
 }
 
 function spawnBoss() {
-  let bossRadius = 80 * mobileScale;
+  // Safety checks for canvas dimensions and mobileScale
+  const safeCanvasWidth = isFinite(canvas.width) ? canvas.width : 800;
+  const safeCanvasHeight = isFinite(canvas.height) ? canvas.height : 600;
+  const safeMobileScale = isFinite(window.mobileScale) ? window.mobileScale : 1;
+  
+  let bossRadius = 80 * safeMobileScale;
   const diffSettings = getDifficultySettings();
   const baseHealth = 500 + (currentLevel - 1) * 50;
   const health = Math.floor(baseHealth * diffSettings.bossHealthMultiplier);
+  
+  // Ensure boss spawns within valid boundaries
+  const maxX = Math.max(safeCanvasWidth - bossRadius * 2, bossRadius);
+  const spawnX = Math.random() * maxX + bossRadius;
+  
   boss = {
-    x: Math.random() * (canvas.width - bossRadius*2) + bossRadius,
+    x: isFinite(spawnX) ? spawnX : safeCanvasWidth / 2,
     y: -bossRadius,
-    radius: bossRadius,
+    radius: isFinite(bossRadius) ? bossRadius : 80,
     speed: 1,
     color: 'red',
-    health: health,
-    maxHealth: health,
+    health: isFinite(health) ? health : 500,
+    maxHealth: isFinite(health) ? health : 500,
     isBoss: true,
     get scaledRadius() { return this.radius; }
   };

@@ -71,14 +71,19 @@ function drawBullets() {
     ctx.save();
 
     // Safety check for finite values
-    const radius = isFinite(bullet.radius) ? bullet.radius : 5;
-    const x = isFinite(bullet.x) ? bullet.x : 0;
-    const y = isFinite(bullet.y) ? bullet.y : 0;
+    const radius = isFinite(bullet.radius) ? Math.max(bullet.radius, 1) : 5;
+    const x = isFinite(bullet.x) ? bullet.x : canvas.width / 2;
+    const y = isFinite(bullet.y) ? bullet.y : canvas.height / 2;
 
-    const bulletGradient = ctx.createRadialGradient(
-      x - 2, y - 2, 0,
-      x, y, radius
-    );
+    // Ensure all gradient parameters are finite
+    const x1 = isFinite(x - 2) ? x - 2 : x;
+    const y1 = isFinite(y - 2) ? y - 2 : y;
+    const r1 = 0;
+    const x2 = x;
+    const y2 = y;
+    const r2 = radius;
+
+    const bulletGradient = ctx.createRadialGradient(x1, y1, r1, x2, y2, r2);
 
     if (bullet.color === 'cyan') {
       bulletGradient.addColorStop(0, '#FFFFFF');
@@ -178,14 +183,19 @@ function drawRegularBlob(blob) {
   ctx.save();
 
   // Safety check for finite values
-  const radius = isFinite(blob.radius) ? blob.radius : 20;
-  const x = isFinite(blob.x) ? blob.x : 0;
-  const y = isFinite(blob.y) ? blob.y : 0;
+  const radius = isFinite(blob.radius) ? Math.max(blob.radius, 1) : 20;
+  const x = isFinite(blob.x) ? blob.x : canvas.width / 2;
+  const y = isFinite(blob.y) ? blob.y : canvas.height / 2;
 
-  const gradient = ctx.createRadialGradient(
-    x - radius * 0.3, y - radius * 0.3, 0,
-    x, y, radius
-  );
+  // Ensure all gradient parameters are finite
+  const x1 = isFinite(x - radius * 0.3) ? x - radius * 0.3 : x;
+  const y1 = isFinite(y - radius * 0.3) ? y - radius * 0.3 : y;
+  const r1 = 0;
+  const x2 = x;
+  const y2 = y;
+  const r2 = radius;
+
+  const gradient = ctx.createRadialGradient(x1, y1, r1, x2, y2, r2);
   gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
   gradient.addColorStop(0.3, blob.color);
   gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
@@ -259,9 +269,14 @@ function drawBoss() {
 
   ctx.save();
 
+  // Safety check for finite values
+  const radius = isFinite(boss.radius) ? Math.max(boss.radius, 1) : 80;
+  const x = isFinite(boss.x) ? boss.x : canvas.width / 2;
+  const y = isFinite(boss.y) ? boss.y : canvas.height / 2;
+
   const bossGradient = ctx.createRadialGradient(
-    boss.x - boss.radius * 0.3, boss.y - boss.radius * 0.3, 0,
-    boss.x, boss.y, boss.radius
+    x - radius * 0.3, y - radius * 0.3, 0,
+    x, y, radius
   );
   bossGradient.addColorStop(0, '#FF6B6B');
   bossGradient.addColorStop(0.3, '#FF0000');
@@ -269,11 +284,11 @@ function drawBoss() {
   bossGradient.addColorStop(1, '#4B0000');
 
   const pulsate = Math.sin(Date.now() / 200) * 5;
-  const currentRadius = boss.radius + pulsate;
+  const currentRadius = radius + pulsate;
 
   ctx.fillStyle = bossGradient;
   ctx.beginPath();
-  ctx.arc(boss.x, boss.y, currentRadius, 0, Math.PI * 2);
+  ctx.arc(x, y, currentRadius, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.strokeStyle = '#FFD700';
@@ -284,42 +299,42 @@ function drawBoss() {
     const outerRadius = currentRadius * 0.9;
     ctx.beginPath();
     ctx.moveTo(
-      boss.x + Math.cos(angle) * innerRadius,
-      boss.y + Math.sin(angle) * innerRadius
+      x + Math.cos(angle) * innerRadius,
+      y + Math.sin(angle) * innerRadius
     );
     ctx.lineTo(
-      boss.x + Math.cos(angle) * outerRadius,
-      boss.y + Math.sin(angle) * outerRadius
+      x + Math.cos(angle) * outerRadius,
+      y + Math.sin(angle) * outerRadius
     );
     ctx.stroke();
   }
 
-  const coreGradient = ctx.createRadialGradient(boss.x, boss.y, 0, boss.x, boss.y, currentRadius * 0.4);
+  const coreGradient = ctx.createRadialGradient(x, y, 0, x, y, currentRadius * 0.4);
   coreGradient.addColorStop(0, '#FFFFFF');
   coreGradient.addColorStop(0.5, '#FF4500');
   coreGradient.addColorStop(1, '#FF0000');
   ctx.fillStyle = coreGradient;
   ctx.beginPath();
-  ctx.arc(boss.x, boss.y, currentRadius * 0.4, 0, Math.PI * 2);
+  ctx.arc(x, y, currentRadius * 0.4, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#FF0000';
   ctx.beginPath();
-  ctx.arc(boss.x - 20, boss.y - 15, 8, 0, Math.PI * 2);
-  ctx.arc(boss.x + 20, boss.y - 15, 8, 0, Math.PI * 2);
+  ctx.arc(x - 20, y - 15, 8, 0, Math.PI * 2);
+  ctx.arc(x + 20, y - 15, 8, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#FFFFFF';
   ctx.beginPath();
-  ctx.arc(boss.x - 18, boss.y - 17, 3, 0, Math.PI * 2);
-  ctx.arc(boss.x + 22, boss.y - 17, 3, 0, Math.PI * 2);
+  ctx.arc(x - 18, y - 17, 3, 0, Math.PI * 2);
+  ctx.arc(x + 22, y - 17, 3, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
 
   let bossHealthFraction = boss.health / boss.maxHealth;
   ctx.beginPath();
-  ctx.arc(boss.x, boss.y, boss.radius + 8, -Math.PI / 2, -Math.PI / 2 + bossHealthFraction * 2 * Math.PI);
+  ctx.arc(x, y, radius + 8, -Math.PI / 2, -Math.PI / 2 + bossHealthFraction * 2 * Math.PI);
   ctx.strokeStyle = bossHealthFraction > 0.5 ? "#00FF00" : bossHealthFraction > 0.25 ? "#FFFF00" : "#FF0000";
   ctx.lineWidth = 6;
   ctx.stroke();
@@ -329,8 +344,8 @@ function drawBoss() {
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'black';
   ctx.lineWidth = 2;
-  ctx.strokeText(boss.health, boss.x, boss.y + 6);
-  ctx.fillText(boss.health, boss.x, boss.y + 6);
+  ctx.strokeText(boss.health, x, y + 6);
+  ctx.fillText(boss.health, x, y + 6);
 }
 
 function drawBoxes() {
