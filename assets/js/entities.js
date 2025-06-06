@@ -71,12 +71,42 @@ function getDifficultySettings() {
   }
 }
 
+// Enemy type definitions
+const enemyTypes = {
+  basic: { rarity: 0.4, sizeMultiplier: 1.0, healthMultiplier: 1.0, speedMultiplier: 1.0, movement: 'straight' },
+  small: { rarity: 0.25, sizeMultiplier: 0.7, healthMultiplier: 0.7, speedMultiplier: 1.3, movement: 'zigzag' },
+  large: { rarity: 0.15, sizeMultiplier: 1.4, healthMultiplier: 1.8, speedMultiplier: 0.8, movement: 'straight' },
+  spinner: { rarity: 0.1, sizeMultiplier: 1.3, healthMultiplier: 1.5, speedMultiplier: 0.6, movement: 'spin' },
+  weaver: { rarity: 0.06, sizeMultiplier: 1.1, healthMultiplier: 1.2, speedMultiplier: 0.9, movement: 'weave' },
+  giant: { rarity: 0.03, sizeMultiplier: 2.0, healthMultiplier: 3.0, speedMultiplier: 0.5, movement: 'straight' },
+  swooper: { rarity: 0.02, sizeMultiplier: 0.9, healthMultiplier: 1.0, speedMultiplier: 1.5, movement: 'swoop' }
+};
+
+function getEnemyType() {
+  const rand = Math.random();
+  let cumulative = 0;
+  
+  for (const [type, data] of Object.entries(enemyTypes)) {
+    cumulative += data.rarity;
+    if (rand <= cumulative) {
+      return { type, ...data };
+    }
+  }
+  return { type: 'basic', ...enemyTypes.basic };
+}
+
 function spawnCluster() {
   const diffSettings = getDifficultySettings();
+  
+  // Scale spawn count based on total power-up levels
+  const totalPowerLevel = permanentRapidLevel + permanentSprayLevel + permanentBulletLevel + 
+                         permanentShieldLevel + permanentSpeedLevel + permanentMultiLevel;
+  const powerScaling = 1 + (totalPowerLevel * 0.15);
+  
   const baseCount = Math.floor(Math.random() * (8 - 3 + 1)) + 3;
-  const count = Math.floor(baseCount * diffSettings.spawnMultiplier);
+  const count = Math.floor(baseCount * diffSettings.spawnMultiplier * powerScaling);
   const clusterCenterX = Math.random() * (canvas.width - 100) + 50;
-  const spread = 50;
+  const spread = 80;
 
   const levelHealthBonus = Math.floor((currentLevel - 1) * diffSettings.levelHealthIncrease * 2);
   const levelSpeedBonus = (currentLevel - 1) * diffSettings.levelSpeedIncrease;
@@ -84,26 +114,53 @@ function spawnCluster() {
   for (let i = 0; i < count; i++) {
     const offsetX = (Math.random() - 0.5) * spread;
     const offsetY = (Math.random() - 0.5) * spread;
+    
+    const enemyData = getEnemyType();
+    const baseRadius = 28 * mobileScale;
+    const radius = baseRadius * enemyData.sizeMultiplier;
+    
     const baseHealth = Math.floor(Math.random() * 2) + baseEnemyHealth + currentLevel;
-    const health = baseHealth + levelHealthBonus;
-
-    const isSpinner = Math.random() < 0.2;
+    const health = Math.floor((baseHealth + levelHealthBonus) * enemyData.healthMultiplier);
+    
+    const baseSpeed = (1 + Math.random()) * baseEnemySpeed + levelSpeedBonus;
+    const speed = baseSpeed * enemyData.speedMultiplier;
 
     let blob = {
       x: clusterCenterX + offsetX,
       y: -20 + offsetY,
-      radius: (isSpinner ? 35 : 28) * mobileScale,
-      speed: (isSpinner ? 0.5 + Math.random() * 0.5 : 1 + Math.random()) * baseEnemySpeed + levelSpeedBonus,
-      color: isSpinner ? '#FF00FF' : 'hsl(' + Math.random() * 360 + ', 100%, 50%)',
-      health: isSpinner ? health + 2 : health,
-      maxHealth: isSpinner ? health + 2 : health,
-      isSpinner: isSpinner,
+      radius: radius,
+      speed: speed,
+      baseSpeed: speed,
+      color: getEnemyColor(enemyData.type),
+      health: health,
+      maxHealth: health,
+      enemyType: enemyData.type,
+      movement: enemyData.movement,
       rotation: 0,
       pulsatePhase: Math.random() * Math.PI * 2,
-      get scaledRadius() { return this.radius; }
+      movementTimer: 0,
+      amplitude: 30 + Math.random() * 40,
+      frequency: 0.02 + Math.random() * 0.03,
+      swoopStartY: -20 + offsetY,
+      swoopDirection: Math.random() < 0.5 ? -1 : 1,
+      get scaledRadius() { return this.radius; },
+      get isSpinner() { return this.enemyType === 'spinner'; }
     };
     blobs.push(blob);
   }
+}
+
+function getEnemyColor(type) {
+  const colorMap = {
+    basic: 'hsl(' + Math.random() * 360 + ', 100%, 50%)',
+    small: '#00FF88',
+    large: '#FF4444',
+    spinner: '#FF00FF',
+    weaver: '#FFAA00',
+    giant: '#8B0000',
+    swooper: '#00AAFF'
+  };
+  return colorMap[type] || colorMap.basic;
 }
 
 function spawnBoxForType(type, isInitial = false) {
@@ -197,16 +254,56 @@ function spawnBoxes() {
   }
 }
 
+// Boss type definitions
+const bossTypes = {
+  destroyer: { 
+    sizeMultiplier: 1.0, healthMultiplier: 1.0, speedMultiplier: 1.0, 
+    color: '#FF0000', movement: 'straight', rarity: 0.4 
+  },
+  titan: { 
+    sizeMultiplier: 1.5, healthMultiplier: 1.8, speedMultiplier: 0.7, 
+    color: '#8B0000', movement: 'weave', rarity: 0.25 
+  },
+  guardian: { 
+    sizeMultiplier: 1.2, healthMultiplier: 1.4, speedMultiplier: 0.8, 
+    color: '#FF4500', movement: 'circle', rarity: 0.2 
+  },
+  colossus: { 
+    sizeMultiplier: 2.2, healthMultiplier: 2.5, speedMultiplier: 0.5, 
+    color: '#4B0000', movement: 'straight', rarity: 0.1 
+  },
+  leviathan: { 
+    sizeMultiplier: 3.0, healthMultiplier: 4.0, speedMultiplier: 0.3, 
+    color: '#2F0000', movement: 'pulse', rarity: 0.05 
+  }
+};
+
+function getBossType() {
+  const rand = Math.random();
+  let cumulative = 0;
+  
+  for (const [type, data] of Object.entries(bossTypes)) {
+    cumulative += data.rarity;
+    if (rand <= cumulative) {
+      return { type, ...data };
+    }
+  }
+  return { type: 'destroyer', ...bossTypes.destroyer };
+}
+
 function spawnBoss() {
   // Safety checks for canvas dimensions and mobileScale
   const safeCanvasWidth = isFinite(canvas.width) ? canvas.width : 800;
   const safeCanvasHeight = isFinite(canvas.height) ? canvas.height : 600;
   const safeMobileScale = isFinite(mobileScale) ? mobileScale : 1;
   
-  let bossRadius = 80 * safeMobileScale;
+  const bossData = getBossType();
+  const baseRadius = 80 * safeMobileScale;
+  const bossRadius = baseRadius * bossData.sizeMultiplier;
+  
   const diffSettings = getDifficultySettings();
   const baseHealth = 500 + (currentLevel - 1) * 50;
-  const health = Math.floor(baseHealth * diffSettings.bossHealthMultiplier);
+  const health = Math.floor(baseHealth * diffSettings.bossHealthMultiplier * bossData.healthMultiplier);
   
   // Ensure boss spawns within valid boundaries
   const maxX = Math.max(safeCanvasWidth - bossRadius * 2, bossRadius);
@@ -216,11 +313,19 @@ function spawnBoss() {
     x: isFinite(spawnX) ? spawnX : safeCanvasWidth / 2,
     y: -bossRadius,
     radius: isFinite(bossRadius) ? bossRadius : 80,
-    speed: 1,
-    color: 'red',
+    speed: bossData.speedMultiplier,
+    baseSpeed: bossData.speedMultiplier,
+    color: bossData.color,
     health: isFinite(health) ? health : 500,
     maxHealth: isFinite(health) ? health : 500,
+    bossType: bossData.type,
+    movement: bossData.movement,
     isBoss: true,
+    movementTimer: 0,
+    centerX: isFinite(spawnX) ? spawnX : safeCanvasWidth / 2,
+    amplitude: 100,
+    frequency: 0.01,
+    pulsePhase: 0,
     get scaledRadius() { return this.radius; }
   };
   bossDefeatedThisLevel = false;

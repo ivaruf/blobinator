@@ -663,14 +663,51 @@ function updateLevelProgression() {
 
 function updateBlobs() {
   for (let i = blobs.length - 1; i >= 0; i--) {
-    blobs[i].y += blobs[i].speed;
-
-    if (blobs[i].isSpinner) {
-      blobs[i].rotation += 0.1;
-      blobs[i].pulsatePhase += 0.15;
+    const blob = blobs[i];
+    blob.movementTimer++;
+    
+    // Update position based on movement type
+    switch (blob.movement) {
+      case 'straight':
+        blob.y += blob.speed;
+        break;
+        
+      case 'zigzag':
+        blob.y += blob.speed;
+        blob.x += Math.sin(blob.movementTimer * 0.1) * 2;
+        break;
+        
+      case 'weave':
+        blob.y += blob.speed;
+        blob.x += Math.sin(blob.movementTimer * blob.frequency) * blob.amplitude * 0.02;
+        break;
+        
+      case 'spin':
+        blob.y += blob.speed;
+        blob.rotation += 0.1;
+        blob.pulsatePhase += 0.15;
+        blob.x += Math.cos(blob.movementTimer * 0.05) * 1.5;
+        break;
+        
+      case 'swoop':
+        if (blob.y < blob.swoopStartY + 200) {
+          blob.y += blob.speed;
+          blob.x += blob.swoopDirection * Math.sin(blob.movementTimer * 0.08) * 3;
+        } else {
+          blob.y += blob.speed * 0.5;
+          blob.x += blob.swoopDirection * 4;
+        }
+        break;
+        
+      default:
+        blob.y += blob.speed;
     }
 
-    if (blobs[i].y + blobs[i].radius >= player.y) {
+    // Keep enemies within screen bounds horizontally
+    if (blob.x < blob.radius) blob.x = blob.radius;
+    if (blob.x > canvas.width - blob.radius) blob.x = canvas.width - blob.radius;
+
+    if (blob.y + blob.radius >= player.y) {
       if (playerShield > 0) {
         playerShield--;
         blobs.splice(i, 1);
@@ -679,7 +716,7 @@ function updateBlobs() {
         return;
       }
     }
-    if (blobs[i].y - blobs[i].radius > canvas.height) {
+    if (blob.y - blob.radius > canvas.height) {
       blobs.splice(i, 1);
     }
   }
@@ -687,7 +724,40 @@ function updateBlobs() {
 
 function updateBoss() {
   if (boss) {
-    boss.y += boss.speed;
+    boss.movementTimer++;
+    
+    // Update position based on boss movement type
+    switch (boss.movement) {
+      case 'straight':
+        boss.y += boss.speed;
+        break;
+        
+      case 'weave':
+        boss.y += boss.speed;
+        boss.x = boss.centerX + Math.sin(boss.movementTimer * boss.frequency) * boss.amplitude;
+        break;
+        
+      case 'circle':
+        boss.y += boss.speed * 0.5;
+        const circleRadius = 80;
+        boss.x = boss.centerX + Math.cos(boss.movementTimer * 0.03) * circleRadius;
+        break;
+        
+      case 'pulse':
+        boss.y += boss.speed;
+        boss.pulsePhase += 0.05;
+        const pulseOffset = Math.sin(boss.pulsePhase) * 20;
+        boss.x = boss.centerX + pulseOffset;
+        break;
+        
+      default:
+        boss.y += boss.speed;
+    }
+    
+    // Keep boss within screen bounds
+    if (boss.x < boss.radius) boss.x = boss.radius;
+    if (boss.x > canvas.width - boss.radius) boss.x = canvas.width - boss.radius;
+    
     if (boss.y + boss.radius >= player.y) {
       if (playerShield > 0) {
         playerShield -= 10;
@@ -707,9 +777,12 @@ function updateBoss() {
         boss.health -= bullets[i].damage;
         bullets.splice(i, 1);
         if (boss.health <= 0) {
+          const bossPoints = boss.bossType === 'leviathan' ? 1500 : 
+                           boss.bossType === 'colossus' ? 1000 : 
+                           boss.bossType === 'titan' ? 750 : 500;
           boss = null;
           bossDefeatedThisLevel = true;
-          score += 500;
+          score += bossPoints;
           if (hasRapidPowerUp && permanentRapidLevel < 10) permanentRapidLevel++;
           if (hasSprayPowerUp && permanentSprayLevel < 10) permanentSprayLevel++;
           if (hasShieldPowerUp) playerShield += 4;

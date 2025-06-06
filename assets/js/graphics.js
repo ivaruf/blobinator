@@ -116,10 +116,24 @@ function drawBullets() {
 
 function drawBlobs() {
   blobs.forEach(blob => {
-    if (blob.isSpinner) {
-      drawSpinnerBlob(blob);
-    } else {
-      drawRegularBlob(blob);
+    switch (blob.enemyType) {
+      case 'spinner':
+        drawSpinnerBlob(blob);
+        break;
+      case 'giant':
+        drawGiantBlob(blob);
+        break;
+      case 'small':
+        drawSmallBlob(blob);
+        break;
+      case 'weaver':
+        drawWeaverBlob(blob);
+        break;
+      case 'swooper':
+        drawSwooperBlob(blob);
+        break;
+      default:
+        drawRegularBlob(blob);
     }
   });
 }
@@ -278,12 +292,38 @@ function drawBoss() {
     x - radius * 0.3, y - radius * 0.3, 0,
     x, y, radius
   );
-  bossGradient.addColorStop(0, '#FF6B6B');
-  bossGradient.addColorStop(0.3, '#FF0000');
-  bossGradient.addColorStop(0.6, '#8B0000');
-  bossGradient.addColorStop(1, '#4B0000');
+  
+  // Different gradients for different boss types
+  switch (boss.bossType) {
+    case 'titan':
+      bossGradient.addColorStop(0, '#AA4444');
+      bossGradient.addColorStop(0.3, '#8B0000');
+      bossGradient.addColorStop(1, '#2F0000');
+      break;
+    case 'guardian':
+      bossGradient.addColorStop(0, '#FF8844');
+      bossGradient.addColorStop(0.3, '#FF4500');
+      bossGradient.addColorStop(1, '#CC3300');
+      break;
+    case 'colossus':
+      bossGradient.addColorStop(0, '#660000');
+      bossGradient.addColorStop(0.3, '#4B0000');
+      bossGradient.addColorStop(1, '#2F0000');
+      break;
+    case 'leviathan':
+      bossGradient.addColorStop(0, '#440000');
+      bossGradient.addColorStop(0.3, '#2F0000');
+      bossGradient.addColorStop(1, '#1A0000');
+      break;
+    default: // destroyer
+      bossGradient.addColorStop(0, '#FF6B6B');
+      bossGradient.addColorStop(0.3, '#FF0000');
+      bossGradient.addColorStop(0.6, '#8B0000');
+      bossGradient.addColorStop(1, '#4B0000');
+  }
 
-  const pulsate = Math.sin(Date.now() / 200) * 5;
+  const pulsate = boss.bossType === 'leviathan' ? 
+    Math.sin(Date.now() / 150) * 15 : Math.sin(Date.now() / 200) * 5;
   const currentRadius = radius + pulsate;
 
   ctx.fillStyle = bossGradient;
@@ -291,12 +331,18 @@ function drawBoss() {
   ctx.arc(x, y, currentRadius, 0, Math.PI * 2);
   ctx.fill();
 
+  // Different decorations for different boss types
   ctx.strokeStyle = '#FFD700';
-  ctx.lineWidth = 3;
-  for (let i = 0; i < 8; i++) {
-    const angle = (i / 8) * Math.PI * 2 + Date.now() / 1000;
+  const lineWidth = boss.bossType === 'colossus' || boss.bossType === 'leviathan' ? 5 : 3;
+  ctx.lineWidth = lineWidth;
+  
+  const spikes = boss.bossType === 'leviathan' ? 16 : 
+                boss.bossType === 'colossus' ? 12 : 8;
+  
+  for (let i = 0; i < spikes; i++) {
+    const angle = (i / spikes) * Math.PI * 2 + Date.now() / 1000;
     const innerRadius = currentRadius * 0.7;
-    const outerRadius = currentRadius * 0.9;
+    const outerRadius = currentRadius * (boss.bossType === 'leviathan' ? 1.1 : 0.9);
     ctx.beginPath();
     ctx.moveTo(
       x + Math.cos(angle) * innerRadius,
@@ -311,23 +357,27 @@ function drawBoss() {
 
   const coreGradient = ctx.createRadialGradient(x, y, 0, x, y, currentRadius * 0.4);
   coreGradient.addColorStop(0, '#FFFFFF');
-  coreGradient.addColorStop(0.5, '#FF4500');
-  coreGradient.addColorStop(1, '#FF0000');
+  coreGradient.addColorStop(0.5, boss.color);
+  coreGradient.addColorStop(1, boss.color);
   ctx.fillStyle = coreGradient;
   ctx.beginPath();
   ctx.arc(x, y, currentRadius * 0.4, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = '#FF0000';
+  // Eyes scale with boss size
+  const eyeSize = Math.max(8, radius * 0.1);
+  const eyeOffset = Math.max(15, radius * 0.2);
+  
+  ctx.fillStyle = boss.color;
   ctx.beginPath();
-  ctx.arc(x - 20, y - 15, 8, 0, Math.PI * 2);
-  ctx.arc(x + 20, y - 15, 8, 0, Math.PI * 2);
+  ctx.arc(x - eyeOffset, y - eyeOffset * 0.8, eyeSize, 0, Math.PI * 2);
+  ctx.arc(x + eyeOffset, y - eyeOffset * 0.8, eyeSize, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#FFFFFF';
   ctx.beginPath();
-  ctx.arc(x - 18, y - 17, 3, 0, Math.PI * 2);
-  ctx.arc(x + 22, y - 17, 3, 0, Math.PI * 2);
+  ctx.arc(x - eyeOffset + 2, y - eyeOffset * 0.8 - 2, eyeSize * 0.4, 0, Math.PI * 2);
+  ctx.arc(x + eyeOffset + 2, y - eyeOffset * 0.8 - 2, eyeSize * 0.4, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -336,14 +386,16 @@ function drawBoss() {
   ctx.beginPath();
   ctx.arc(x, y, radius + 8, -Math.PI / 2, -Math.PI / 2 + bossHealthFraction * 2 * Math.PI);
   ctx.strokeStyle = bossHealthFraction > 0.5 ? "#00FF00" : bossHealthFraction > 0.25 ? "#FFFF00" : "#FF0000";
-  ctx.lineWidth = 6;
+  ctx.lineWidth = boss.bossType === 'leviathan' ? 10 : 6;
   ctx.stroke();
 
   ctx.fillStyle = 'white';
-  ctx.font = 'bold 18px Arial';
+  const fontSize = boss.bossType === 'leviathan' ? 24 : 
+                  boss.bossType === 'colossus' ? 20 : 18;
+  ctx.font = `bold ${fontSize}px Arial`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'black';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 3;
   ctx.strokeText(boss.health, x, y + 6);
   ctx.fillText(boss.health, x, y + 6);
 }
@@ -475,9 +527,157 @@ function drawHealthBar(entity, color) {
   ctx.stroke();
 }
 
+function drawGiantBlob(blob) {
+  ctx.save();
+  
+  const gradient = ctx.createRadialGradient(
+    blob.x - blob.radius * 0.3, blob.y - blob.radius * 0.3, 0,
+    blob.x, blob.y, blob.radius
+  );
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+  gradient.addColorStop(0.3, blob.color);
+  gradient.addColorStop(0.7, '#8B0000');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw spikes around giant enemies
+  ctx.strokeStyle = '#FFD700';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const innerRadius = blob.radius * 0.8;
+    const outerRadius = blob.radius * 1.1;
+    ctx.beginPath();
+    ctx.moveTo(
+      blob.x + Math.cos(angle) * innerRadius,
+      blob.y + Math.sin(angle) * innerRadius
+    );
+    ctx.lineTo(
+      blob.x + Math.cos(angle) * outerRadius,
+      blob.y + Math.sin(angle) * outerRadius
+    );
+    ctx.stroke();
+  }
+
+  ctx.restore();
+  drawHealthBar(blob, "#FF4444");
+  drawHealthText(blob);
+}
+
+function drawSmallBlob(blob) {
+  ctx.save();
+  
+  const gradient = ctx.createRadialGradient(
+    blob.x - blob.radius * 0.3, blob.y - blob.radius * 0.3, 0,
+    blob.x, blob.y, blob.radius
+  );
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+  gradient.addColorStop(0.4, blob.color);
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.2)');
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Small energy trail
+  ctx.strokeStyle = blob.color;
+  ctx.lineWidth = 2;
+  ctx.shadowColor = blob.color;
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(blob.x, blob.y, blob.radius * 0.6, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
+  drawHealthBar(blob, "#00FF88");
+  drawHealthText(blob);
+}
+
+function drawWeaverBlob(blob) {
+  ctx.save();
+  
+  const gradient = ctx.createRadialGradient(
+    blob.x - blob.radius * 0.3, blob.y - blob.radius * 0.3, 0,
+    blob.x, blob.y, blob.radius
+  );
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+  gradient.addColorStop(0.3, blob.color);
+  gradient.addColorStop(1, 'rgba(255, 170, 0, 0.3)');
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw weaving pattern
+  ctx.strokeStyle = '#FFAA00';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 + blob.movementTimer * 0.1;
+    const waveRadius = blob.radius * 0.7;
+    ctx.beginPath();
+    ctx.arc(
+      blob.x + Math.cos(angle) * waveRadius * 0.3,
+      blob.y + Math.sin(angle) * waveRadius * 0.3,
+      3, 0, Math.PI * 2
+    );
+    ctx.stroke();
+  }
+
+  ctx.restore();
+  drawHealthBar(blob, "#FFAA00");
+  drawHealthText(blob);
+}
+
+function drawSwooperBlob(blob) {
+  ctx.save();
+  
+  const gradient = ctx.createRadialGradient(
+    blob.x - blob.radius * 0.3, blob.y - blob.radius * 0.3, 0,
+    blob.x, blob.y, blob.radius
+  );
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+  gradient.addColorStop(0.3, blob.color);
+  gradient.addColorStop(1, 'rgba(0, 170, 255, 0.3)');
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw swooping trails
+  ctx.strokeStyle = '#00AAFF';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#00AAFF';
+  ctx.shadowBlur = 10;
+  
+  for (let i = 1; i <= 3; i++) {
+    const trailX = blob.x - blob.swoopDirection * i * 8;
+    const trailY = blob.y + i * 5;
+    const trailRadius = blob.radius * (1 - i * 0.2);
+    ctx.beginPath();
+    ctx.arc(trailX, trailY, trailRadius * 0.3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
+  drawHealthBar(blob, "#00AAFF");
+  drawHealthText(blob);
+}
+
 function drawHealthText(entity) {
   ctx.fillStyle = 'white';
-  ctx.font = entity.isSpinner ? 'bold 14px Arial' : 'bold 12px Arial';
+  const fontSize = entity.enemyType === 'giant' ? 16 : 
+                   entity.enemyType === 'small' ? 10 : 
+                   entity.isSpinner ? 14 : 12;
+  ctx.font = `bold ${fontSize}px Arial`;
   ctx.textAlign = 'center';
   ctx.strokeStyle = 'black';
   ctx.lineWidth = 2;
